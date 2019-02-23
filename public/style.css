@@ -1,0 +1,31 @@
+#server_messages, #user_list {
+    border: 5px solid #ccc;
+    padding: 10px;
+}
+
+#server_messages {
+    height: 200px;
+    overflow: auto;
+    padding: 0;
+}
+#server_messages p {
+    font-family: monospace;
+    background-color: #eee;
+    margin: 0;
+    padding: 5px;
+}
+
+#client_status {
+    padding: 10px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    text-transform: uppercase;
+    color: #fff;
+}
+#client_status.connected {
+    background-color: #097501;
+}
+#client_status.disconnected {
+    background-color: #9b1009;
+}

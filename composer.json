@@ -1,0 +1,19 @@
+{
+    "name": "rbwebdesigns/cah_php",
+    "description": "Cards against humanity online game server",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Ricky",
+            "email": "ricky@rbwebdesigns.co.uk"
+        }
+    ],
+    "require": {
+        "cboden/ratchet": "^0.4.1"
+    },
+	"autoload": {
+        "psr-4": {
+            "rbwebdesigns\\cah_php\\": "app/"
+        }
+    }
+}
