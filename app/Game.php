@@ -8,13 +8,9 @@ class Game implements MessageComponentInterface
 {
     protected $clients;
     protected $playerManager;
-
-    protected $questions = [
-        'I went to the supermarket and bought ____.',
-        'My favourite ice-cream flavour is ____.',
-        '____ tastes nice.'
-    ];
-    protected $currentQuestion;
+    protected $questionCardManager;
+    protected $answerCardManager;
+    
     protected $cardsInPlay;
 
     /**
@@ -23,12 +19,15 @@ class Game implements MessageComponentInterface
     public function __construct()
     {
         $this->clients = new \SplObjectStorage;
-        $this->inactiveClients = new \SplObjectStorage;
         $this->playerManager = new PlayerManager;
+        $this->questionCardManager = new QuestionCardManager;
+        $this->answerCardManager = new AnswerCardManager;
     }
 
     /**
      * Connection opened callback
+     * 
+     * @param ConnectionInterface $conn
      */
     public function onOpen(ConnectionInterface $conn)
     {
@@ -38,6 +37,9 @@ class Game implements MessageComponentInterface
 
     /**
      * Message recieved callback
+     * 
+     * @param ConnectionInterface $from
+     * @param string $msg
      */
     public function onMessage(ConnectionInterface $from, $msg)
     {
@@ -48,31 +50,14 @@ class Game implements MessageComponentInterface
 
         switch ($data['action']) {
             case 'player_connected':
-                $player = $this->playerManager->connectPlayer($data, $from);
-                if (!$player) {
-                    $from->send('{ "type": "duplicate_username" }');
-                    $from->close(); // @todo test this
-                    return;
-                }
-                if (count($player->cards) > 0) {
-                    $this->sendMessage($player->getConnection(), [
-                        'type' => 'answer_card_update',
-                        'cards' => $player->cards
-                    ]); 
-                }
-                $this->sendToAll([
-                    'type' => 'player_connected',
-                    'playerName' => $player->username,
-                    'host' => $player->isGameHost,
-                    'players' => $this->playerManager->getAllPlayers(),
-                ]);
+                $this->addPlayer($from, $data);
                 break;
 
             case 'start_game':
                 $this->distributeAnswerCards();
                 $this->sendToAll([
                     'type' => 'round_start',
-                    'questionCard' => $this->getQuestionCard(),
+                    'questionCard' => $this->questionCardManager->getRandomQuestion(),
                     'currentJudge' => $this->playerManager->getJudge()
                 ]);
                 $this->cardsInPlay = [];
@@ -84,8 +69,10 @@ class Game implements MessageComponentInterface
                 
                 // Store who played the card
                 foreach ($cards as $card) {
-                    $this->cardsInPlay[$card] = $this->playerManager->getAnswerData($card);
-                    $this->cardsInPlay[$card]['player'] = $player->username;
+                    $this->cardsInPlay[$card] = [
+                        'card' => $this->answerCardManager->getAnswerCard($card),
+                        'player' => $player
+                    ];
                 }
 
                 $player->status = 'Waiting';
@@ -103,10 +90,7 @@ class Game implements MessageComponentInterface
                     // Ensure the username is not sent to all players
                     $safeCardData = [];
                     foreach ($this->cardsInPlay as $card) {
-                        $safeCardData[] = [
-                            'id' => $card['id'],
-                            'text' => $card['text'],
-                        ];
+                        $safeCardData[] = $card['card'];
                     }
 
                     // Send message to all players revealing the cards
@@ -121,11 +105,12 @@ class Game implements MessageComponentInterface
             case 'winner_picked':
                 $winningCard = $data['card'];
                 $winner = $this->cardsInPlay[$winningCard]['player'];
-                $winner = $this->playerManager->getPlayerByUsername($winner);
+                $winner->score += 1;
                 
                 $this->sendToAll([
                     'type' => 'round_winner',
-                    'player' => $winner,
+                    'winner' => $winner,
+                    'players' => $this->playerManager->getAllPlayers(),
                     'card' => $winningCard
                 ]);
                 break;
@@ -156,6 +141,43 @@ class Game implements MessageComponentInterface
     }
 
     /**
+     * Add a player into game from connection details and username
+     * 
+     * @param ConnectionInterface $from
+     * @param array $data
+     */
+    protected function addPlayer($from, $data)
+    {
+        // Connect player to game
+        $player = $this->playerManager->connectPlayer($data, $from);
+
+        // If no player returned then this username was in-use
+        if (!$player) {
+            $from->send('{ "type": "duplicate_username" }');
+            $from->close(); // @todo test this
+            return;
+        }
+
+        // If they're reconnecting and have cards then send them the data
+        if (count($player->cards) > 0) {
+            $this->sendMessage($player->getConnection(), [
+                'type' => 'answer_card_update',
+                'cards' => $player->cards
+            ]); 
+        }
+
+        // @todo Send them current question?
+
+        // Notify all players
+        $this->sendToAll([
+            'type' => 'player_connected',
+            'playerName' => $player->username,
+            'host' => $player->isGameHost,
+            'players' => $this->playerManager->getAllPlayers(),
+        ]);
+    }
+
+    /**
      * Send a message to a single client
      */
     protected function sendMessage($client, $data)
@@ -180,25 +202,14 @@ class Game implements MessageComponentInterface
     }
 
     /**
-     * Get a random question card from the pile
-     * 
-     * @todo make random
-     */
-    protected function getQuestionCard()
-    {
-        $card = $this->questions[0];
-        $this->currentQuestion = $card;
-        return $card;
-    }
-
-    /**
      * Send message out to each client to replenish their answer cards
      */
     protected function distributeAnswerCards()
     {
-        $this->playerManager->dealAnswerCards();
         $players = $this->playerManager->getAllPlayers();
-
+        $this->answerCardManager->dealAnswerCards($players);
+        
+        // Send seperate message to each player with cards
         foreach ($players as $player) {
             $connection = $player->getConnection();
             $this->sendMessage($connection, [

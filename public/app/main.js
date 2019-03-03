@@ -49,18 +49,18 @@ var createServerConnection = function () {
         var data = JSON.parse(e.data);
         switch (data.type) {
             case 'player_connected':
-                showServerMessage(data.playerName + " connected");
+                showServerMessage('<strong>' + data.playerName + "</strong> connected");
                 playerList = data.players;
                 updatePlayerList();
                 break;
             case 'player_disconnected':
-                showServerMessage(data.playerName + " disconnected");
+                showServerMessage('<strong>' + data.playerName + "</strong> disconnected");
                 playerList = data.players;
                 updatePlayerList();
                 break;
             case 'round_start':
                 showServerMessage("Round started");
-                questionWrapper.innerHTML = data.questionCard;
+                questionWrapper.innerHTML = data.questionCard.text;
                 currentJudge = data.currentJudge.username;
                 cardsSelectable = currentJudge !== usernameField.value;
                 if (cardsSelectable) {
@@ -85,7 +85,9 @@ var createServerConnection = function () {
                 showPlayerSubmissions(data.allCards);
                 break;
             case 'round_winner':
-                showServerMessage("Round winner is " + data.player.username);
+                showServerMessage("Round winner is " + data.winner.username);
+                playerList = data.players;
+                updatePlayerList();
                 document.getElementById('played_card' + data.card).className = 'card winner';
                 break;
         }
@@ -202,7 +204,7 @@ var showPlayerSubmissions = function (cards) {
 };
 
 var updatePlayerList = function() {
-    var output = "";
+    var output = "<table cellpadding='5' cellspacing='1' width='100%'><tr><th></th><th>Username</th><th>Score</th><th>Status</th></tr>";
     for (var p = 0; p < playerList.length; p++) {
         var player = playerList[p];
         if (!player.isActive) continue;
@@ -212,11 +214,13 @@ var updatePlayerList = function() {
             document.getElementById("host_controls").style.display = 'block';
         }
 
-        var label = player.isGameHost ? player.username + ' (host)' : player.username;
-        label += " - " + player.status;
-        output += '<p data-player-name="' + player.username + '">' + label + '</p>';
+        output += '<tr data-player-name="' + player.username + '">';
+        output += '<td>' + (player.isGameHost ? 'H' : '') + '</td>';
+        output += '<td>' + player.username + '</td>';
+        output += '<td>' + player.score + '</td>';
+        output += '<td>' + player.status + '</td></tr>';
     }
-    userList.innerHTML = output;
+    userList.innerHTML = output + "</table>";
 };
 
 var startGame = function(event) {

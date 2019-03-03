@@ -36,12 +36,14 @@ body > aside {
     body > aside h2 {
         color: white;
         margin: 0 0 .5em 0;
+        font-size: 20px;
     }
 
 #server_messages {
-    min-height: 200px;
+    height: 40vh;
     overflow: auto;
     padding: 0;
+    margin-bottom: 20px;
 }
     #server_messages p {
         font-family: monospace;
@@ -49,6 +51,17 @@ body > aside {
         margin: 0;
         padding: 10px;
         color: white;
+        margin-bottom: 1px
+    }
+
+#user_list {
+    margin-bottom: 20px;
+}
+    #user_list td,
+    #user_list th {
+        background-color: rgba(255,255,255,0.2);
+        color: white;
+        font-family: monospace;
     }
 
 #client_status {
@@ -59,12 +72,12 @@ body > aside {
     text-transform: uppercase;
     color: #fff;
 }
-#client_status.connected {
-    background-color: #097501;
-}
-#client_status.disconnected {
-    background-color: #9b1009;
-}
+    #client_status.connected {
+        background-color: #097501;
+    }
+    #client_status.disconnected {
+        background-color: #9b1009;
+    }
 
 #question {
     background-color: black;

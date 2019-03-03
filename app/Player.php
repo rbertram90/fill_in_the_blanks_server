@@ -9,6 +9,7 @@ class Player
     public $isGameHost = false;
     public $isActive;
     public $status;
+    public $score;
 
     public $cards;
     protected $connection;
@@ -19,7 +20,9 @@ class Player
         $this->isActive = true;
         $this->connection = $connection;
         $this->cards = [];
-        $this->status = 'connected';
+        $this->status = 'Connected';
+        $this->score = 0;
+        $this->cardsInPlay = [];
     }
 
     public function getConnection()
@@ -36,7 +39,7 @@ class Player
         foreach ($cards as $card) {
             $c = 0;
             foreach ($this->cards as $playerCard) {
-                if ($playerCard['id'] == $card['id']) {
+                if ($playerCard->id == $card) {
                     array_splice($this->cards, $c, 1);
                     break;
                 }
