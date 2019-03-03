@@ -9,9 +9,10 @@ class Game implements MessageComponentInterface
     protected $clients;
     protected $playerManager;
     protected $questionCardManager;
-    protected $answerCardManager;
-    
+    protected $answerCardManager;    
     protected $cardsInPlay;
+
+    public static $minPlayers = 3;
 
     /**
      * Game constructor
@@ -54,13 +55,7 @@ class Game implements MessageComponentInterface
                 break;
 
             case 'start_game':
-                $this->distributeAnswerCards();
-                $this->sendToAll([
-                    'type' => 'round_start',
-                    'questionCard' => $this->questionCardManager->getRandomQuestion(),
-                    'currentJudge' => $this->playerManager->getJudge()
-                ]);
-                $this->cardsInPlay = [];
+                $this->startGame();
                 break;
 
             case 'cards_submit':
@@ -178,10 +173,35 @@ class Game implements MessageComponentInterface
     }
 
     /**
+     * Try and start the game - will fail if not enough players are connected
+     */
+    protected function startGame()
+    {
+        if ($this->clients->count() < self::$minPlayers) {
+            // Send to host - assuming host is always client 0
+            $this->clients->rewind();
+            $this->sendMessage($this->clients->current(), [
+                'type' => 'start_game_fail',
+                'message' => 'Not enough players (minimum ' . self::$minPlayers . ')'
+            ]);
+            return;
+        }
+
+        $this->distributeAnswerCards();
+        $this->sendToAll([
+            'type' => 'round_start',
+            'questionCard' => $this->questionCardManager->getRandomQuestion(),
+            'currentJudge' => $this->playerManager->getJudge()
+        ]);
+        $this->cardsInPlay = [];
+    }
+
+    /**
      * Send a message to a single client
      */
     protected function sendMessage($client, $data)
     {
+        print "Sending message to ({$client->resourceId}): {$data['type']}".PHP_EOL;
         $msg = json_encode($data);
         $client->send($msg);
     }
@@ -192,12 +212,7 @@ class Game implements MessageComponentInterface
     protected function sendToAll($data)
     {
         foreach ($this->clients as $client) {
-            // if ($from !== $client) {
-                // The sender is not the receiver, send to each client connected
-                // $client->send($msg);
-            // }
-            $msg = json_encode($data);
-            $client->send($msg);
+            $this->sendMessage($client, $data);
         }
     }
 

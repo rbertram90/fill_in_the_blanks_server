@@ -16,12 +16,51 @@ body {
 
 body > header {
     background-color: #000;
-    padding: 20px;
     grid-area: header;
+    display: flex;
+    justify-content: space-between;
 }
     body > header h1 {
         color: #fff;
         margin: 0;
+        padding: 20px;
+    }
+    body > header #connect_form {
+        display: flex;
+        padding-top: 10px;
+    }
+    body > header #connect_form .field {
+        margin-right: 20px;
+    }
+    body > header #connect_form .actions {
+        padding-top: 20px;
+    }
+    body > header #connect_form label {
+        color: white;
+        display: block;
+        margin-bottom: 5px;
+        font-size: 0.8em;
+    }
+    body > header #connect_form input[type=text] {
+        border: 0;
+        padding: 5px;
+    }
+    body > header #connect_form input[type=text]:disabled {
+        cursor: not-allowed;
+    }
+    body > header #connect_form button {
+        background-color: blue;
+        border: 0;
+        color: white;
+        padding: 5px 10px;
+        cursor: pointer;
+    }
+    body > header #connect_form button:hover {
+        background-color: darkblue;
+    }
+    body > header #connect_form button:disabled {
+        background-color: grey;
+        cursor: not-allowed;
     }
 
 body > main {
@@ -66,11 +105,9 @@ body > aside {
 
 #client_status {
     padding: 10px;
-    position: fixed;
-    bottom: 0;
-    left: 0;
     text-transform: uppercase;
     color: #fff;
+    height: 100%;
 }
     #client_status.connected {
         background-color: #097501;
@@ -88,14 +125,18 @@ body > aside {
 .card {
     background-color: white;
     width: 150px;
-    height: 220px;
+    height: 150px;
     padding: 10px;
     display: inline-block;
     margin-right: 10px;
 }
-.card.active {
-    border: 5px solid blue;
-}
-.card.winner {
-    border: 5px solid green;
+    .card.active {
+        border: 5px solid blue;
+    }
+    .card.winner {
+        border: 5px solid green;
+    }
+
+#judging_outer {
+    display: none;
 }

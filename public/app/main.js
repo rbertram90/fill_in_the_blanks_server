@@ -3,6 +3,8 @@ var socket = null;
 var statusWrapper = document.getElementById('client_status');
 var serverMessages = document.getElementById('server_messages');
 var usernameField = document.getElementById('username');
+var hostField = document.getElementById('connect_host');
+var portField = document.getElementById('connect_port')
 
 // Buttons
 var connectButton = document.getElementById("connect_button");
@@ -18,23 +20,76 @@ var currentJudge = "";
 var cardsSelectable = false;
 var cards = null;
 
+var handleMessage = function(e) {
+    var data = JSON.parse(e.data);
+    switch (data.type) {
+        case 'player_connected':
+            showServerMessage('<strong>' + data.playerName + '</strong> connected');
+            playerList = data.players;
+            updatePlayerList();
+            break;
+        case 'player_disconnected':
+            showServerMessage('<strong>' + data.playerName + "</strong> disconnected");
+            playerList = data.players;
+            updatePlayerList();
+            break;
+        case 'round_start':
+            showServerMessage("Round started");
+            questionWrapper.innerHTML = data.questionCard.text;
+            currentJudge = data.currentJudge.username;
+            cardsSelectable = currentJudge !== usernameField.value;
+            if (cardsSelectable) {
+                showServerMessage("Choose your card(s)");
+                playCardsButton.disabled = false;
+            }
+            else {
+                showServerMessage("Waiting for other players to choose card(s)");
+            }
+            break;
+        case 'start_game_fail':
+            startGameFailed(data.message);
+            break;
+        case 'answer_card_update':
+            showServerMessage("Cards recieved");
+            showAnswerCards(data.cards);
+            break;
+        case 'player_submitted':
+            showServerMessage('<strong>' + data.playerName + '</strong> played their card(s)');
+            playerList = data.players;
+            updatePlayerList();
+            break;
+        case 'round_judge':
+            showServerMessage("All players have played their card(s)");
+            showPlayerSubmissions(data.allCards);
+            break;
+        case 'round_winner':
+            showServerMessage('Round winner is <strong>' + data.winner.username + '</strong>');
+            playerList = data.players;
+            updatePlayerList();
+            document.getElementById('played_card' + data.card).className = 'card winner';
+            break;
+    }
+};
+
 var openConnection = function(event) {
     if (usernameField.value.length == 0) {
         return;
     }
     usernameField.disabled = true;
     connectButton.disabled = true;
+    hostField.disabled = true;
+    portField.disabled = true;
 
     createServerConnection();
 
     event.preventDefault();
-}
+};
 
 var createServerConnection = function () {
     showServerMessage("Connecting to server...");
 
-    var host = document.getElementById('connect_host').value;
-    var port = document.getElementById('connect_port').value;
+    var host = hostField.value;
+    var port = portField.value;
 
     socket = new WebSocket('ws://' + host + ':' + port);
 
@@ -45,58 +100,14 @@ var createServerConnection = function () {
         socket.send('{ "action": "player_connected", "username": "' + usernameField.value + '" }');
     };
 
-    socket.onmessage = function(e) {
-        var data = JSON.parse(e.data);
-        switch (data.type) {
-            case 'player_connected':
-                showServerMessage('<strong>' + data.playerName + "</strong> connected");
-                playerList = data.players;
-                updatePlayerList();
-                break;
-            case 'player_disconnected':
-                showServerMessage('<strong>' + data.playerName + "</strong> disconnected");
-                playerList = data.players;
-                updatePlayerList();
-                break;
-            case 'round_start':
-                showServerMessage("Round started");
-                questionWrapper.innerHTML = data.questionCard.text;
-                currentJudge = data.currentJudge.username;
-                cardsSelectable = currentJudge !== usernameField.value;
-                if (cardsSelectable) {
-                    showServerMessage("Choose your card(s)");
-                    playCardsButton.disabled = false;
-                }
-                else {
-                    showServerMessage("Waiting for other players to choose card(s)");
-                }
-                break;
-            case 'answer_card_update':
-                showServerMessage("Cards recieved");
-                showAnswerCards(data.cards);
-                break;
-            case 'player_submitted':
-                showServerMessage(data.playerName + " played their card(s)");
-                playerList = data.players;
-                updatePlayerList();
-                break;
-            case 'round_judge':
-                showServerMessage("All players have played their card(s)");
-                showPlayerSubmissions(data.allCards);
-                break;
-            case 'round_winner':
-                showServerMessage("Round winner is " + data.winner.username);
-                playerList = data.players;
-                updatePlayerList();
-                document.getElementById('played_card' + data.card).className = 'card winner';
-                break;
-        }
-    };
+    socket.onmessage = handleMessage;
 
     socket.onclose = function(e) {
         showServerMessage("Connection to server failed");
         usernameField.disabled = false;
         connectButton.disabled = false;
+        hostField.disabled = false;
+        portField.disabled = false;
         statusWrapper.innerHTML = "Not connected";
         statusWrapper.className = "disconnected";
     };
@@ -141,7 +152,7 @@ var submitCards = function (e) {
 var highlightWinner = function (e) {
     if (true) {
         for (card in document.querySelectorAll(".judging_inner .card")) {
-            this.className = "card";
+            card.className = "card";
         }
         // Toggle active class
         if (this.className.indexOf('active') > -1) {
@@ -183,6 +194,8 @@ var showAnswerCards = function (cards) {
 
 var showPlayerSubmissions = function (cards) {
     var output = "";
+    var heading = "Player submissions";
+
     for (var c = 0; c < cards.length; c++) {
         output += "<p class='card' id='played_card" + cards[c].id + "' data-id='" + cards[c].id + "'>" + cards[c].text + "</p>";
     }
@@ -199,8 +212,12 @@ var showPlayerSubmissions = function (cards) {
             cards[c].addEventListener('click', highlightWinner);
         }
         document.querySelector('#pick_winner').addEventListener('click', pickWinner);
+        heading = "Pick a winner"
         showServerMessage("Pick a winning card");
     }
+
+    document.querySelector("#judging_outer > h2").innerHTML = heading;
+    document.querySelector("#judging_outer").style.display = "block";
 };
 
 var updatePlayerList = function() {
@@ -211,6 +228,7 @@ var updatePlayerList = function() {
 
         // todo - make this more secure!
         if (player.isGameHost && player.username == usernameField.value) {
+            clientIsGameHost = true;
             document.getElementById("host_controls").style.display = 'block';
         }
 
@@ -227,6 +245,13 @@ var startGame = function(event) {
     socket.send('{ "action": "start_game" }');
     startGameButton.disabled = true;
     event.preventDefault();
+};
+
+var startGameFailed = function (details) {
+    if (clientIsGameHost) {
+        showServerMessage('Failed to start game - ' + details);
+        startGameButton.disabled = false;
+    }
 };
 
 connectButton.addEventListener('click', openConnection);
