@@ -5,94 +5,47 @@
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-    <h1>CAH Client</h1>
-    <label for="username">1. Enter your username</label>
-    <input type="text" id="username" value="player1">
-    <button id="connect_button" type="button">Connect</button>
+    <header>
+        <h1>CAH Client</h1>
+    </header>
 
-    <div id="client_status" class="disconnected">Not connected</div>
+    <main>
+        <label for="host">Server (IP/Domain)</label>
+        <input type="text" value="localhost" id="connect_host">
+        <label for="host">Port</label>
+        <input type="text" value="8080" id="connect_port">
+        <label for="username">1. Enter your username</label>
+        <input type="text" id="username" value="player1">
+        <button id="connect_button" type="button">Connect</button>
 
-    <h2>Players</h2>
-    <div id="user_list"></div>
+        <div id="client_status" class="disconnected">Not connected</div>
 
-    <h2>Log</h2>
-    <div id="server_messages"></div>
+        <div id="host_controls" style="display: none;">
+            <button id="start_game" type="button">Start game</button>
+        </div>
 
-    <script>
-        socket = null;
-        var statusWrapper = document.getElementById('client_status');
-        var serverMessages = document.getElementById('server_messages');
-        var usernameField = document.getElementById('username');
-        var connectButton = document.getElementById("connect_button");
-        var userList = document.getElementById('user_list');
+        <h2>Question</h2>
+        <div id="question"></div>
 
-        var openConnection = function(event) {
-            if (usernameField.value.length == 0) {
-                return;
-            }
-            usernameField.disabled = true;
-            connectButton.disabled = true;
+        <div class="judging_outer">
+            <h2>Choose a winner...</h2>
+            <div class="judging_inner"></div>
+        </div>
 
-            createServerConnection();
+        <h2>Answers</h2>
+        <button id="play_cards" type="button" disabled>Play card(s)</button>
+        <div id="answers"></div>
+    </main>
 
-            
-            event.preventDefault();
-        }
+    <aside>
+        <h2>Messages</h2>
+        <div id="server_messages"></div>
 
-        var createServerConnection = function () {
-            showServerMessage("Connecting to server...");
-            socket = new WebSocket('ws://localhost:8080');
+        <h2>Players</h2>
+        <div id="user_list"></div>
+    </aside>
 
-            socket.onopen = function(e) {
-                showServerMessage("Connected!");
-                statusWrapper.innerHTML = "Connected";
-                statusWrapper.className = "connected";
-                socket.send('{ "action": "player_connected", "username": "' + usernameField.value + '" }');
-            };
-
-            socket.onmessage = function(e) {
-                var data = JSON.parse(e.data);
-                switch (data.type) {
-                    case 'player_connected':
-                        showServerMessage(data.playerName + " connected");
-                        updatePlayerList(data.players);
-                        break;
-                    case 'player_disconnected':
-                        showServerMessage(data.playerName + " disconnected");
-                        updatePlayerList(data.players);
-                        break;
-                }
-            };
-
-            socket.onclose = function(e) {
-                showServerMessage("Connection to server failed");
-                usernameField.disabled = false;
-                connectButton.disabled = false;
-                statusWrapper.innerHTML = "Not connected";
-                statusWrapper.className = "disconnected";
-            };
-        };
-
-        var showServerMessage = function(text) {
-            serverMessages.innerHTML = "<p>" + text + "</p>" + serverMessages.innerHTML;
-        };
-
-        var updatePlayerList = function(players) {
-            console.log(players);
-            var output = "";
-            for (var p = 0; p < players.length; p++) {
-                var player = players[p];
-                if (!player.isActive) continue;
-                var label = player.isGameHost ? player.username + ' (host)' : player.username;
-                output += '<p data-player-name="' + player.username + '">' + label + '</p>';
-            }
-            userList.innerHTML = output;
-        };
-
-        connectButton.addEventListener('click', openConnection);
-    </script>
+    <script src="app/main.js"></script>
 
 </body>
 </html>
-
-

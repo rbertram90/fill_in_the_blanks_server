@@ -1,23 +1,55 @@
+html { height: 100%; }
+
 body {
     background-color: #888;
+    min-height: 100%;
+    font-family: sans-serif;
+    margin: 0;
+    display: grid;
+    grid-template-areas:
+      "header header"
+      "main sidebar";
+    grid-template-columns: 10fr 6fr;
+    grid-template-rows: 80px auto;
+    align-content: stretch;
 }
 
-#server_messages, #user_list {
-    border: 5px solid #ccc;
-    padding: 10px;
+body > header {
+    background-color: #000;
+    padding: 20px;
+    grid-area: header;
 }
+    body > header h1 {
+        color: #fff;
+        margin: 0;
+    }
+
+body > main {
+    grid-area: main;
+    padding: 20px;
+}
+body > aside {
+    background-color: #21007F;
+    grid-area: sidebar;
+    padding: 20px;
+}
+    body > aside h2 {
+        color: white;
+        margin: 0 0 .5em 0;
+    }
 
 #server_messages {
-    height: 200px;
+    min-height: 200px;
     overflow: auto;
     padding: 0;
 }
-#server_messages p {
-    font-family: monospace;
-    background-color: #eee;
-    margin: 0;
-    padding: 5px;
-}
+    #server_messages p {
+        font-family: monospace;
+        background-color: rgba(255,255,255,0.2);
+        margin: 0;
+        padding: 10px;
+        color: white;
+    }
 
 #client_status {
     padding: 10px;
@@ -32,4 +64,25 @@ body {
 }
 #client_status.disconnected {
     background-color: #9b1009;
+}
+
+#question {
+    background-color: black;
+    color: white;
+    padding: 10px;
+}
+
+.card {
+    background-color: white;
+    width: 150px;
+    height: 220px;
+    padding: 10px;
+    display: inline-block;
+    margin-right: 10px;
+}
+.card.active {
+    border: 5px solid blue;
+}
+.card.winner {
+    border: 5px solid green;
 }
