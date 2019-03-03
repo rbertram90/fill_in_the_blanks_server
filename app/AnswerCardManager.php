@@ -8,9 +8,10 @@ class AnswerCardManager
 {
     protected static $answers = [
         'Goat', 'Cow', 'Sheep', 'Pig', 'Horse', 'Chicken', 'Fish',
-        'Joey from Friends', 'Michael Owens left foot', 'Eternal happiness',
-        'Card 11', 'Card 12', 'Card 13', 'Card 14', 'Card 15', 'Card 16', 'Card 17', 'Card 18', 'Card 19', 'Card 20',
-        'Card 21', 'Card 22', 'Card 23', 'Card 24', 'Card 25', 'Card 26', 'Card 27', 'Card 28', 'Card 29', 'Card 30',
+        'Joey from Friends', 'Michael Owens left foot', 'Eternal happiness', 'Ronald McDonald',
+        'Sunshine', 'Mother Teresa', 'Peanut Butter and Jelly', 'Cornflakes', 'Retro 80s television', 'Eddie Van Halen',
+        'Potted plants', 'Grand Theft Auto', 'Pikachu', 'Dance like there\'s no tomorrow', 'Singing in the shower',
+        'Card 23', 'Card 24', 'Card 25', 'Card 26', 'Card 27', 'Card 28', 'Card 29', 'Card 30',
         'Card 31', 'Card 32', 'Card 33', 'Card 34', 'Card 35', 'Card 36', 'Card 37', 'Card 38', 'Card 39', 'Card 40',
         'Card 41', 'Card 42', 'Card 43', 'Card 44', 'Card 45', 'Card 46', 'Card 47', 'Card 48', 'Card 49', 'Card 50',
         'Card 51', 'Card 52', 'Card 53', 'Card 54', 'Card 55', 'Card 56', 'Card 57', 'Card 58', 'Card 59', 'Card 60',

@@ -10,6 +10,7 @@ var portField = document.getElementById('connect_port')
 var connectButton = document.getElementById("connect_button");
 var startGameButton = document.getElementById("start_game");
 var playCardsButton = document.getElementById("play_cards");
+var nextRoundButton = document.getElementById("next_round");
 
 var userList = document.getElementById('user_list');
 var questionWrapper = document.getElementById('question');
@@ -22,17 +23,20 @@ var cards = null;
 
 var handleMessage = function(e) {
     var data = JSON.parse(e.data);
+
     switch (data.type) {
         case 'player_connected':
             showServerMessage('<strong>' + data.playerName + '</strong> connected');
             playerList = data.players;
             updatePlayerList();
             break;
+
         case 'player_disconnected':
             showServerMessage('<strong>' + data.playerName + "</strong> disconnected");
             playerList = data.players;
             updatePlayerList();
             break;
+
         case 'round_start':
             showServerMessage("Round started");
             questionWrapper.innerHTML = data.questionCard.text;
@@ -46,27 +50,33 @@ var handleMessage = function(e) {
                 showServerMessage("Waiting for other players to choose card(s)");
             }
             break;
+
         case 'start_game_fail':
             startGameFailed(data.message);
             break;
+
         case 'answer_card_update':
             showServerMessage("Cards recieved");
             showAnswerCards(data.cards);
             break;
+
         case 'player_submitted':
             showServerMessage('<strong>' + data.playerName + '</strong> played their card(s)');
             playerList = data.players;
             updatePlayerList();
             break;
+
         case 'round_judge':
             showServerMessage("All players have played their card(s)");
             showPlayerSubmissions(data.allCards);
             break;
+
         case 'round_winner':
-            showServerMessage('Round winner is <strong>' + data.winner.username + '</strong>');
+            showServerMessage('Round winner is <strong>' + data.winner.username + '</strong>', 'success');
             playerList = data.players;
             updatePlayerList();
             document.getElementById('played_card' + data.card).className = 'card winner';
+            nextRoundButton.disabled = false;
             break;
     }
 };
@@ -94,7 +104,7 @@ var createServerConnection = function () {
     socket = new WebSocket('ws://' + host + ':' + port);
 
     socket.onopen = function(e) {
-        showServerMessage("Connected to " + host + " on port " + port + "!");
+        showServerMessage("Connected to " + host + " on port " + port + "!", 'success');
         statusWrapper.innerHTML = "Connected";
         statusWrapper.className = "connected";
         socket.send('{ "action": "player_connected", "username": "' + usernameField.value + '" }');
@@ -103,7 +113,7 @@ var createServerConnection = function () {
     socket.onmessage = handleMessage;
 
     socket.onclose = function(e) {
-        showServerMessage("Connection to server failed");
+        showServerMessage('Connection to server failed', 'error');
         usernameField.disabled = false;
         connectButton.disabled = false;
         hostField.disabled = false;
@@ -113,8 +123,9 @@ var createServerConnection = function () {
     };
 };
 
-var showServerMessage = function(text) {
-    serverMessages.innerHTML = "<p>" + text + "</p>" + serverMessages.innerHTML;
+var showServerMessage = function(text, type='info') {
+    var d = new Date();
+    serverMessages.innerHTML = "<p class='message " + type + "' title='Added at " + d.getHours() + ':' + d.getMinutes() + "'>" + text + "</p>" + serverMessages.innerHTML;
 };
 
 var selectCard = function (e) {
@@ -136,13 +147,16 @@ var submitCards = function (e) {
     if (activeCards.length == cardsRequired) {
         var cardIndexes = [];
         for (var c = 0; c < activeCards.length; c++) {
-            cardIndexes.push(activeCards[c].dataset.id);
+            var card = activeCards[c];
+            cardIndexes.push(card.dataset.id);
+            card.parentNode.removeChild(card);
         }
         socket.send('{ "action": "cards_submit", "cards": [' + cardIndexes.toString() + '] }');
         playCardsButton.disabled = true;
+        cardsSelectable = false;
     }
     else {
-        showServerMessage("Please select the correct number of cards");
+        showServerMessage('Please select the correct number of cards', 'error');
     }
 };
 
@@ -171,7 +185,7 @@ var pickWinner = function (e) {
     var winningCard = document.querySelector(".judging_inner .card.active");
 
     if (!winningCard) {
-        showServerMessage("Please select a card");
+        showServerMessage('Please select a card', 'error');
         return;
     }
 
@@ -213,7 +227,7 @@ var showPlayerSubmissions = function (cards) {
         }
         document.querySelector('#pick_winner').addEventListener('click', pickWinner);
         heading = "Pick a winner"
-        showServerMessage("Pick a winning card");
+        showServerMessage("It's your turn to choose the winning card");
     }
 
     document.querySelector("#judging_outer > h2").innerHTML = heading;
@@ -242,6 +256,8 @@ var updatePlayerList = function() {
 };
 
 var startGame = function(event) {
+    if (!clientIsGameHost) return;
+
     socket.send('{ "action": "start_game" }');
     startGameButton.disabled = true;
     event.preventDefault();
@@ -249,13 +265,20 @@ var startGame = function(event) {
 
 var startGameFailed = function (details) {
     if (clientIsGameHost) {
-        showServerMessage('Failed to start game - ' + details);
+        showServerMessage('Failed to start game - ' + details, 'error');
         startGameButton.disabled = false;
     }
 };
 
+var startNextRound = function(event) {
+    if (!clientIsGameHost) return;
+
+    socket.send('{ "action": "next_round" }');
+};
+
 connectButton.addEventListener('click', openConnection);
 startGameButton.addEventListener('click', startGame);
+nextRoundButton.addEventListener('click', startNextRound);
 playCardsButton.addEventListener('click', submitCards);
 
-showServerMessage("Welcome to Cards Against Humanity!");
+showServerMessage('Welcome to Cards Against Humanity!');

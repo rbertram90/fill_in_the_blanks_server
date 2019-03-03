@@ -32,10 +32,11 @@
     <main>
         <div id="host_controls" style="display: none;">
             <button id="start_game" type="button">Start game</button>
+            <button id="next_round" type="button" disabled>Trigger next round</button>
         </div>
 
         <h2>Current question</h2>
-        <div id="question"></div>
+        <div id="question"><i>Awaiting game start</i></div>
 
         <div id="judging_outer">
             <h2></h2>
@@ -44,7 +45,9 @@
 
         <h2>Your cards</h2>
         <button id="play_cards" type="button" disabled>Play card(s)</button>
-        <div id="answers"></div>
+        <div id="answers">
+            <p><i>Awaiting game start</i></p>
+        </div>
     </main>
 
     <aside>

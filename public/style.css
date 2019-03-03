@@ -86,11 +86,17 @@ body > aside {
 }
     #server_messages p {
         font-family: monospace;
-        background-color: rgba(255,255,255,0.2);
+        background-color: rgba(255, 255, 255, 0.2);
         margin: 0;
         padding: 10px;
         color: white;
         margin-bottom: 1px
+    }
+    #server_messages p.error {
+        background-color: rgba(255, 0, 0, 0.4);
+    }
+    #server_messages p.success {
+        background-color: rgba(0, 255, 0, 0.4);
     }
 
 #user_list {
@@ -98,7 +104,7 @@ body > aside {
 }
     #user_list td,
     #user_list th {
-        background-color: rgba(255,255,255,0.2);
+        background-color: rgba(255, 255, 255, 0.2);
         color: white;
         font-family: monospace;
     }
@@ -129,6 +135,7 @@ body > aside {
     padding: 10px;
     display: inline-block;
     margin-right: 10px;
+    cursor: pointer;
 }
     .card.active {
         border: 5px solid blue;

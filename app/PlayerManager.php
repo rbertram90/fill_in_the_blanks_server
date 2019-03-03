@@ -123,12 +123,14 @@ class PlayerManager
         foreach ($this->players as $player) {
             if ($player->username == $this->currentPlayer->username) {
                 if (count($this->players) > $index + 1) {
-                    $this->currentPlayer = $player;
+                    $this->currentPlayer = $this->players[$index + 1];
                     break;
                 }
                 $this->currentPlayer = $this->players[0];
+                break;
             }
             $index++;
         }
+        return $this->currentPlayer;
     }
 }

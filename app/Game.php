@@ -12,7 +12,7 @@ class Game implements MessageComponentInterface
     protected $answerCardManager;    
     protected $cardsInPlay;
 
-    public static $minPlayers = 3;
+    public static $minPlayers = 2;
 
     /**
      * Game constructor
@@ -56,6 +56,10 @@ class Game implements MessageComponentInterface
 
             case 'start_game':
                 $this->startGame();
+                break;
+
+            case 'next_round':
+                $this->nextRound();
                 break;
 
             case 'cards_submit':
@@ -178,9 +182,7 @@ class Game implements MessageComponentInterface
     protected function startGame()
     {
         if ($this->clients->count() < self::$minPlayers) {
-            // Send to host - assuming host is always client 0
-            $this->clients->rewind();
-            $this->sendMessage($this->clients->current(), [
+            $this->sendToHost([
                 'type' => 'start_game_fail',
                 'message' => 'Not enough players (minimum ' . self::$minPlayers . ')'
             ]);
@@ -192,6 +194,17 @@ class Game implements MessageComponentInterface
             'type' => 'round_start',
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
             'currentJudge' => $this->playerManager->getJudge()
+        ]);
+        $this->cardsInPlay = [];
+    }
+
+    protected function nextRound()
+    {
+        $this->distributeAnswerCards();
+        $this->sendToAll([
+            'type' => 'round_start',
+            'questionCard' => $this->questionCardManager->getRandomQuestion(),
+            'currentJudge' => $this->playerManager->nextJudge()
         ]);
         $this->cardsInPlay = [];
     }
@@ -214,6 +227,16 @@ class Game implements MessageComponentInterface
         foreach ($this->clients as $client) {
             $this->sendMessage($client, $data);
         }
+    }
+
+    /**
+     * Send message to the game host
+     */
+    protected function sendToHost($data)
+    {
+        // Send to host - assuming host is always client 0
+        $this->clients->rewind();
+        $this->sendMessage($this->clients->current(), $data);
     }
 
     /**

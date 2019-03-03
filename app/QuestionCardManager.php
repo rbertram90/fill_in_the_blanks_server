@@ -10,7 +10,10 @@ class QuestionCardManager
     protected static $questions = [
         'I went to the supermarket and bought ____.',
         'My favourite ice-cream flavour is ____.',
-        '____ tastes nice.'
+        '____: tastes grrrrrrrreat.',
+        'The first thing came into my head when I saw your grandmother was ____.',
+        'The first thing came into my head when I you was ____.',
+        'The first thing came into my head when I saw your ____ was "Wow!".',
     ];
 
     protected $availableCards;
