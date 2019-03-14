@@ -6,20 +6,7 @@ namespace rbwebdesigns\cah_php;
  */
 class AnswerCardManager
 {
-    protected static $answers = [
-        'Goat', 'Cow', 'Sheep', 'Pig', 'Horse', 'Chicken', 'Fish',
-        'Joey from Friends', 'Michael Owens left foot', 'Eternal happiness', 'Ronald McDonald',
-        'Sunshine', 'Mother Teresa', 'Peanut Butter and Jelly', 'Cornflakes', 'Retro 80s television', 'Eddie Van Halen',
-        'Potted plants', 'Grand Theft Auto', 'Pikachu', 'Dance like there\'s no tomorrow', 'Singing in the shower',
-        'Card 23', 'Card 24', 'Card 25', 'Card 26', 'Card 27', 'Card 28', 'Card 29', 'Card 30',
-        'Card 31', 'Card 32', 'Card 33', 'Card 34', 'Card 35', 'Card 36', 'Card 37', 'Card 38', 'Card 39', 'Card 40',
-        'Card 41', 'Card 42', 'Card 43', 'Card 44', 'Card 45', 'Card 46', 'Card 47', 'Card 48', 'Card 49', 'Card 50',
-        'Card 51', 'Card 52', 'Card 53', 'Card 54', 'Card 55', 'Card 56', 'Card 57', 'Card 58', 'Card 59', 'Card 60',
-        'Card 61', 'Card 62', 'Card 63', 'Card 64', 'Card 65', 'Card 66', 'Card 67', 'Card 68', 'Card 69', 'Card 70',
-        'Card 71', 'Card 72', 'Card 73', 'Card 74', 'Card 75', 'Card 76', 'Card 77', 'Card 78', 'Card 79', 'Card 80',
-        'Card 81', 'Card 82', 'Card 83', 'Card 84', 'Card 85', 'Card 86', 'Card 87', 'Card 88', 'Card 89', 'Card 90',
-        'Card 91', 'Card 92', 'Card 93', 'Card 94', 'Card 95', 'Card 96', 'Card 97', 'Card 98', 'Card 99', 'Card 100',
-    ];
+    protected static $answers = [];
 
     protected $availableCards = [];
 
@@ -29,12 +16,10 @@ class AnswerCardManager
     public function __construct()
     {
         // Convert answers into cards
-        $this->availableCards = [];
-        $answerIndex = 0;
-        foreach (self::$answers as $answerText) {
-            $this->availableCards[] = $this->createCard($answerIndex);
-            $answerIndex++;
-        }
+        $whiteCards = file_get_contents(CARDS_ROOT.'/standard/white.txt');
+        self::$answers = explode(PHP_EOL, $whiteCards);
+        
+        $this->resetDeck();
     }
 
     /**
@@ -90,5 +75,17 @@ class AnswerCardManager
     public function getAnswerCard($index)
     {
         return $this->createCard($index);
+    }
+
+    /**
+     * Return all cards to available
+     */
+    public function resetDeck() {
+        $this->availableCards = [];
+        $answerIndex = 0;
+        foreach (self::$answers as $answerText) {
+            $this->availableCards[] = $this->createCard($answerIndex);
+            $answerIndex++;
+        }
     }
 }

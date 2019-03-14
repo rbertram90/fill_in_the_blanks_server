@@ -133,4 +133,14 @@ class PlayerManager
         }
         return $this->currentPlayer;
     }
+
+    /**
+     * Reset player data
+     */
+    public function resetPlayers() {
+        foreach ($this->players as $player) {
+            $player->reset();
+        }
+        $this->currentPlayer = $this->players[0];
+    }
 }

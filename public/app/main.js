@@ -5,6 +5,7 @@ var serverMessages = document.getElementById('server_messages');
 var usernameField = document.getElementById('username');
 var hostField = document.getElementById('connect_host');
 var portField = document.getElementById('connect_port')
+var resetGameButton = document.getElementById('reset_game');
 
 // Buttons
 var connectButton = document.getElementById("connect_button");
@@ -42,6 +43,8 @@ var handleMessage = function(e) {
             questionWrapper.innerHTML = data.questionCard.text;
             currentJudge = data.currentJudge.username;
             cardsSelectable = currentJudge !== usernameField.value;
+            document.querySelector(".judging_inner").innerHTML = "";
+            document.querySelector("#judging_outer > h2").innerHTML = "";
             if (cardsSelectable) {
                 showServerMessage("Choose your card(s)");
                 playCardsButton.disabled = false;
@@ -77,6 +80,15 @@ var handleMessage = function(e) {
             updatePlayerList();
             document.getElementById('played_card' + data.card).className = 'card winner';
             nextRoundButton.disabled = false;
+            break;
+
+        case 'game_reset':
+            playerList = data.players;
+            updatePlayerList();
+            questionWrapper.innerHTML = "<i>Awaiting game start</i>";
+            answersWrapper.innerHTML = "<i>Awaiting game start</i>";
+            playCardsButton.disabled = true;
+            if (clientIsGameHost) startGameButton.disabled = false;
             break;
     }
 };
@@ -276,9 +288,17 @@ var startNextRound = function(event) {
     socket.send('{ "action": "next_round" }');
 };
 
+var resetGame = function () {
+    if (!clientIsGameHost) return;
+    if (!confirm('Are you sure you want to reset the game?')) return false;
+
+    socket.send('{ "action": "reset_game" }');
+};
+
 connectButton.addEventListener('click', openConnection);
 startGameButton.addEventListener('click', startGame);
 nextRoundButton.addEventListener('click', startNextRound);
 playCardsButton.addEventListener('click', submitCards);
+resetGameButton.addEventListener('click', resetGame);
 
 showServerMessage('Welcome to Cards Against Humanity!');

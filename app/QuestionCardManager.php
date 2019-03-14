@@ -7,14 +7,7 @@ namespace rbwebdesigns\cah_php;
 class QuestionCardManager
 {
 
-    protected static $questions = [
-        'I went to the supermarket and bought ____.',
-        'My favourite ice-cream flavour is ____.',
-        '____: tastes grrrrrrrreat.',
-        'The first thing came into my head when I saw your grandmother was ____.',
-        'The first thing came into my head when I you was ____.',
-        'The first thing came into my head when I saw your ____ was "Wow!".',
-    ];
+    protected static $questions = [];
 
     protected $availableCards;
     public $currentQuestion;
@@ -24,13 +17,11 @@ class QuestionCardManager
      */
     public function __construct()
     {
+        // Convert answers into cards
+        $this->populateCards();
+
         // Convert question text into cards
-        $this->availableCards = [];
-        $questionIndex = 0;
-        foreach (self::$questions as $questionText) {
-            $this->availableCards[] = $this->createCard($questionIndex);
-            $questionIndex++;
-        }
+        $this->resetDeck();
     }
 
     /**
@@ -64,6 +55,32 @@ class QuestionCardManager
         $card->id = $questionIndex;
         $card->text = self::$questions[$questionIndex];
         return $card;
+    }
+
+    /**
+     * Get the cards from text files
+     * 
+     * @todo add UI to choose packs!
+     */
+    protected function populateCards()
+    {
+        // Convert answers into cards
+        $blackCards = file_get_contents(CARDS_ROOT.'/standard/black.txt');
+        self::$questions = explode(PHP_EOL, $blackCards);
+    }
+
+    /**
+     * Restore all cards
+     */
+    public function resetDeck()
+    {
+        // Convert question text into cards
+        $this->availableCards = [];
+        $questionIndex = 0;
+        foreach (self::$questions as $questionText) {
+            $this->availableCards[] = $this->createCard($questionIndex);
+            $questionIndex++;
+        }
     }
 
 }

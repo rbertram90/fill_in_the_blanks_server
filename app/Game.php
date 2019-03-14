@@ -113,6 +113,17 @@ class Game implements MessageComponentInterface
                     'card' => $winningCard
                 ]);
                 break;
+
+            case 'reset_game':
+                $this->playerManager->resetPlayers();
+                $this->questionCardManager->resetDeck();
+                $this->answerCardManager->resetDeck();
+                $this->cardsInPlay = [];
+                $this->sendToAll([
+                    'type' => 'game_reset',
+                    'players' => $this->playerManager->getAllPlayers(),
+                ]);
+                break;
         }
     }
 

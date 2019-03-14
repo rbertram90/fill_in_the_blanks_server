@@ -17,12 +17,10 @@ class Player
 
     public function __construct($connection)
     {
-        $this->isActive = true;
         $this->connection = $connection;
-        $this->cards = [];
+        $this->isActive = true;
         $this->status = 'Connected';
-        $this->score = 0;
-        $this->cardsInPlay = [];
+        $this->reset();
     }
 
     public function getConnection()
@@ -46,5 +44,11 @@ class Player
                 $c++;
             }
         }
+    }
+
+    public function reset() {
+        $this->cards = [];
+        $this->score = 0;
+        $this->cardsInPlay = [];
     }
 }

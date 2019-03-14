@@ -33,6 +33,7 @@
         <div id="host_controls" style="display: none;">
             <button id="start_game" type="button">Start game</button>
             <button id="next_round" type="button" disabled>Trigger next round</button>
+            <button id="reset_game" type="button">Reset game</button>
         </div>
 
         <h2>Current question</h2>
