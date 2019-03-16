@@ -93,6 +93,11 @@ var handleMessage = function(e) {
     }
 };
 
+/**
+ * Click event for connect to server 
+ * 
+ * @param {object} event 
+ */
 var openConnection = function(event) {
     if (usernameField.value.length == 0) {
         return;
@@ -107,6 +112,11 @@ var openConnection = function(event) {
     event.preventDefault();
 };
 
+/**
+ * Try and open a connection to the server
+ * 
+ * @param {object} event 
+ */
 var createServerConnection = function () {
     showServerMessage("Connecting to server...");
 
@@ -135,12 +145,23 @@ var createServerConnection = function () {
     };
 };
 
+/**
+ * Add a message to the messages panel
+ * 
+ * @param {string} text Message to show
+ * @param {string} type Message context - success, error or info
+ */
 var showServerMessage = function(text, type='info') {
     var d = new Date();
     serverMessages.innerHTML = "<p class='message " + type + "' title='Added at " + d.getHours() + ':' + d.getMinutes() + "'>" + text + "</p>" + serverMessages.innerHTML;
 };
 
-var selectCard = function (e) {
+/**
+ * Click handler for selecting white card(s) to play
+ * 
+ * @param {event} event 
+ */
+var selectCard = function (event) {
     if (cardsSelectable) {
         // Toggle active class
         if (this.className.indexOf('active') > -1) {
@@ -152,7 +173,12 @@ var selectCard = function (e) {
     }
 };
 
-var submitCards = function (e) {
+/**
+ * Click handler for submit card(s) button
+ * 
+ * @param {event} event 
+ */
+var submitCards = function (event) {
     var activeCards = document.querySelectorAll('#answers .card.active');
     var cardsRequired = (questionWrapper.innerHTML.match(/____/g) || []).length;
 
@@ -173,7 +199,9 @@ var submitCards = function (e) {
 };
 
 /**
- * Judging player has picked a winning card
+ * Click handler for selecting winning card
+ * 
+ * @param {event} event
  */
 var highlightWinner = function (e) {
     if (true) {
@@ -191,7 +219,10 @@ var highlightWinner = function (e) {
 };
 
 /**
+ * Click handler for confirm selection button
  * Judging player has picked a winning card
+ * 
+ * @param {event} event
  */
 var pickWinner = function (e) {
     var winningCard = document.querySelector(".judging_inner .card.active");
@@ -205,6 +236,11 @@ var pickWinner = function (e) {
 
 };
 
+/**
+ * Show player white card deck
+ * 
+ * @param {object[]} cards 
+ */
 var showAnswerCards = function (cards) {
     var output = "";
     for (var c = 0; c < cards.length; c++) {
@@ -218,12 +254,29 @@ var showAnswerCards = function (cards) {
     }
 };
 
+/**
+ * Show all cards that players have submitted this round
+ * 
+ * @param {object[]} cards 
+ */
 var showPlayerSubmissions = function (cards) {
     var output = "";
     var heading = "Player submissions";
+    var originalQuestionText = document.getElementById('question').innerHTML;
 
     for (var c = 0; c < cards.length; c++) {
-        output += "<p class='card' id='played_card" + cards[c].id + "' data-id='" + cards[c].id + "'>" + cards[c].text + "</p>";
+        // Build up a new string, replacing blanks in question with card text
+        var playerCards = cards[c];
+        var cardIndex = 0;
+        var questionText = originalQuestionText;
+
+        while (questionText.indexOf('____') > -1) {
+            questionText = questionText.replace('____', '<strong>' + playerCards[cardIndex].text + '</strong>');
+            cardIndex++;
+        }
+
+        // just use the ID of first card as winner
+        output += "<p class='card' id='played_card" + cards[c][0].id + "' data-id='" + cards[c][0].id + "'>" + questionText + "</p>";
     }
 
     if (currentJudge == usernameField.value) {
@@ -246,6 +299,9 @@ var showPlayerSubmissions = function (cards) {
     document.querySelector("#judging_outer").style.display = "block";
 };
 
+/**
+ * Update the players table markup
+ */
 var updatePlayerList = function() {
     var output = "<table cellpadding='5' cellspacing='1' width='100%'><tr><th></th><th>Username</th><th>Score</th><th>Status</th></tr>";
     for (var p = 0; p < playerList.length; p++) {
@@ -267,6 +323,9 @@ var updatePlayerList = function() {
     userList.innerHTML = output + "</table>";
 };
 
+/**
+ * Click handler for the start game button
+ */
 var startGame = function(event) {
     if (!clientIsGameHost) return;
 
@@ -275,6 +334,12 @@ var startGame = function(event) {
     event.preventDefault();
 };
 
+/**
+ * Error handler for when server failed to start game, this would
+ * likely be because there aren't enough players!
+ * 
+ * @param {string} details Message from server
+ */
 var startGameFailed = function (details) {
     if (clientIsGameHost) {
         showServerMessage('Failed to start game - ' + details, 'error');
@@ -282,12 +347,20 @@ var startGameFailed = function (details) {
     }
 };
 
+/**
+ * Click handler for start next round button
+ * 
+ * @param {event} event 
+ */
 var startNextRound = function(event) {
     if (!clientIsGameHost) return;
 
     socket.send('{ "action": "next_round" }');
 };
 
+/**
+ * Click handler for reset game button
+ */
 var resetGame = function () {
     if (!clientIsGameHost) return;
     if (!confirm('Are you sure you want to reset the game?')) return false;

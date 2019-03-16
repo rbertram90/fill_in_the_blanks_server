@@ -89,8 +89,13 @@ class Game implements MessageComponentInterface
                     // Ensure the username is not sent to all players
                     $safeCardData = [];
                     foreach ($this->cardsInPlay as $card) {
-                        $safeCardData[] = $card['card'];
+                        $playerId = $card['player']->getConnection()->resourceId;
+                        if (!array_key_exists($playerId, $safeCardData)) $safeCardData[$playerId] = [];
+                        $safeCardData[$playerId][] = $card['card'];
                     }
+
+                    // Now remove player Ids keys!
+                    $safeCardData = array_values($safeCardData);
 
                     // Send message to all players revealing the cards
                     $this->sendToAll([
