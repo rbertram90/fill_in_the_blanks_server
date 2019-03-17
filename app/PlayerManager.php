@@ -1,5 +1,5 @@
 <?php
-namespace rbwebdesigns\cah_php;
+namespace rbwebdesigns\fill_in_the_blanks;
 
 class PlayerManager
 {
@@ -20,7 +20,7 @@ class PlayerManager
      * @param ConnectionInterface $conn
      *  Connection object from client
      * 
-     * @return rbwebdesigns\cah_php\Player|boolean
+     * @return rbwebdesigns\fill_in_the_blanks\Player|boolean
      *   If username exists and is connected to game then returns false.
      *   Otherwise returns Player object
      */
@@ -48,7 +48,7 @@ class PlayerManager
     /**
      * Get a connected player by their username
      * 
-     * @return rbwebdesigns\cah_php\Player|null
+     * @return rbwebdesigns\fill_in_the_blanks\Player|null
      */
     public function getPlayerByUsername($username)
     {
@@ -63,7 +63,7 @@ class PlayerManager
     /**
      * Get a connected player by their resource (socket) Id
      * 
-     * @return rbwebdesigns\cah_php\Player|null
+     * @return rbwebdesigns\fill_in_the_blanks\Player|null
      */
     public function getPlayerByResourceId($resourceId)
     {
@@ -78,7 +78,7 @@ class PlayerManager
     /**
      * Get all players in the game (active and not)
      * 
-     * @return rbwebdesigns\cah_php\Player[]
+     * @return rbwebdesigns\fill_in_the_blanks\Player[]
      */
     public function getAllPlayers()
     {

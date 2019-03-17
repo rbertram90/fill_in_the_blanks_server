@@ -1,0 +1,4 @@
+{
+    "cards_path": "/var/www/html/card_packs",
+    "port": "8080"
+}

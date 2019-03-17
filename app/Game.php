@@ -1,5 +1,5 @@
 <?php
-namespace rbwebdesigns\cah_php;
+namespace rbwebdesigns\fill_in_the_blanks;
 
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;

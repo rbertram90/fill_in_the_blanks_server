@@ -1,2 +1,4 @@
 vendor/
 card_packs/
+public/standard.zip
+config.json

@@ -1,8 +1,8 @@
 <?php
-namespace rbwebdesigns\cah_php;
+namespace rbwebdesigns\fill_in_the_blanks;
 
 /**
- * Class rbwebdesigns\cah_php\QuestionCardManager
+ * Class rbwebdesigns\fill_in_the_blanks\QuestionCardManager
  */
 class QuestionCardManager
 {
@@ -25,7 +25,7 @@ class QuestionCardManager
     }
 
     /**
-     * @return rbwebdesigns\cah_php\Card
+     * @return rbwebdesigns\fill_in_the_blanks\Card
      */
     public function getRandomQuestion()
     {
@@ -47,7 +47,7 @@ class QuestionCardManager
      * @param int $questionIndex
      *   Index of the question text
      * 
-     * @return rbwebdesigns\cah_php\Card
+     * @return rbwebdesigns\fill_in_the_blanks\Card
      */
     protected function createCard($questionIndex)
     {

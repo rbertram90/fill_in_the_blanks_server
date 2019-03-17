@@ -1,8 +1,8 @@
 <?php
-namespace rbwebdesigns\cah_php;
+namespace rbwebdesigns\fill_in_the_blanks;
 
 /**
- * Class rbwebdesigns\cah_php\AnswerCardManager
+ * Class rbwebdesigns\fill_in_the_blanks\AnswerCardManager
  */
 class AnswerCardManager
 {
@@ -25,7 +25,7 @@ class AnswerCardManager
     /**
      * Get a random answer card from the ones that have not been played yet
      * 
-     * @return rbwebdesigns\cah_php\Card
+     * @return rbwebdesigns\fill_in_the_blanks\Card
      */
     protected function takeRandomCard()
     {
@@ -45,7 +45,7 @@ class AnswerCardManager
      * @param int $answerID
      *  Index of the answer text
      * 
-     * @return rbwebdesigns\cah_php\Card
+     * @return rbwebdesigns\fill_in_the_blanks\Card
      */
     protected function createCard($answerID)
     {

@@ -12,11 +12,13 @@ var connectButton = document.getElementById("connect_button");
 var startGameButton = document.getElementById("start_game");
 var playCardsButton = document.getElementById("play_cards");
 var nextRoundButton = document.getElementById("next_round");
+var pickWinnerButton = null;
 
 var userList = document.getElementById('user_list');
 var questionWrapper = document.getElementById('question');
 var answersWrapper = document.getElementById('answers');
 var clientIsGameHost = false;
+var userIsPicking = false;
 var playerList = [];
 var currentJudge = "";
 var cardsSelectable = false;
@@ -204,7 +206,7 @@ var submitCards = function (event) {
  * @param {event} event
  */
 var highlightWinner = function (e) {
-    if (true) {
+    if (userIsPicking) {
         for (card in document.querySelectorAll(".judging_inner .card")) {
             card.className = "card";
         }
@@ -231,6 +233,9 @@ var pickWinner = function (e) {
         showServerMessage('Please select a card', 'error');
         return;
     }
+
+    pickWinnerButton.disabled = true;
+    userIsPicking = false;
 
     socket.send('{ "action": "winner_picked", "card": ' + winningCard.dataset.id + ' }');
 
@@ -290,7 +295,9 @@ var showPlayerSubmissions = function (cards) {
         for (var c = 0; c < cards.length; c++) {
             cards[c].addEventListener('click', highlightWinner);
         }
-        document.querySelector('#pick_winner').addEventListener('click', pickWinner);
+        userIsPicking = true;
+        pickWinnerButton = document.querySelector('#pick_winner');
+        pickWinnerButton.addEventListener('click', pickWinner);
         heading = "Pick a winner"
         showServerMessage("It's your turn to choose the winning card");
     }
@@ -374,4 +381,4 @@ nextRoundButton.addEventListener('click', startNextRound);
 playCardsButton.addEventListener('click', submitCards);
 resetGameButton.addEventListener('click', resetGame);
 
-showServerMessage('Welcome to Cards Against Humanity!');
+showServerMessage('Welcome to Fill in the Blanks!');
