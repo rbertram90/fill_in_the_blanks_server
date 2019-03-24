@@ -142,6 +142,9 @@ body > aside {
     margin-right: 10px;
     cursor: pointer;
     user-select: none;
+    vertical-align: top;
+    border-radius: 8px;
+    border: 5px solid white;
 }
     .card.active {
         border: 5px solid blue;

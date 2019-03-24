@@ -189,13 +189,13 @@ var submitCards = function (event) {
     var cardsRequired = (questionWrapper.innerHTML.match(/____/g) || []).length;
 
     if (activeCards.length == cardsRequired) {
-        var cardIndexes = [];
+        var cards = [];
         for (var c = 0; c < activeCards.length; c++) {
             var card = activeCards[c];
-            cardIndexes.push(card.dataset.id);
+            cards.push({ id: card.dataset.id, text: card.innerHTML });
             card.parentNode.removeChild(card);
         }
-        socket.send('{ "action": "cards_submit", "cards": [' + cardIndexes.toString() + '] }');
+        socket.send('{ "action": "cards_submit", "cards": ' + JSON.stringify(cards) + ' }');
         playCardsButton.disabled = true;
         cardsSelectable = false;
     }
@@ -255,7 +255,7 @@ var pickWinner = function (e) {
 var showAnswerCards = function (cards) {
     var output = "";
     for (var c = 0; c < cards.length; c++) {
-        output += "<p class='card' data-id='" + cards[c].id + "'>" + cards[c].text + "</p>";
+        output += "<p class='card' data-id='" + cards[c].id + "' contenteditable='true'>" + cards[c].text + "</p>";
     }
     answersWrapper.innerHTML = output;
 

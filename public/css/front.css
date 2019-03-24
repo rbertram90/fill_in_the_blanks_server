@@ -65,3 +65,7 @@ code {
     background-color: rgb(68, 37, 155);
     background-image: radial-gradient(rgb(68, 23, 192), #21007F);
 }
+
+.done {
+    text-decoration: line-through;
+}

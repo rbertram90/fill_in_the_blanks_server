@@ -329,7 +329,7 @@ class Game implements MessageComponentInterface
      */
     protected function answerSubmitted($from, $data)
     {
-        $cards = $data['cards']; // Array of card IDs
+        $cards = $data['cards']; // Multi-dimentional array [id => X, text => Y]
         $player = $this->playerManager->getPlayerByResourceId($from->resourceId);
         
         // Ensure player has not already played cards this round
@@ -337,8 +337,14 @@ class Game implements MessageComponentInterface
 
         // Save who played the card
         foreach ($cards as $card) {
-            $this->cardsInPlay[$card] = [
-                'card' => $this->answerCardManager->getAnswerCard($card),
+            $id = $card['id'];
+            $text = $card['text'];
+            
+            $realCard = $this->answerCardManager->getAnswerCard($id);
+            $realCard->text = $text;
+
+            $this->cardsInPlay[$id] = [
+                'card' => $realCard,
                 'player' => $player
             ];
         }

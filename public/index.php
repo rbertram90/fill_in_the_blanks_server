@@ -21,7 +21,13 @@
         <h3>On the critical 'fix list'</h3>
         <ul>
             <li>Have a game end once the winning score is reached</li>
-            <li>Handle client re-connect properly</li>
+            <li><span class="done">Handle client re-connect properly</span> <i>(Improved 24/03/19)</i></li>
+        </ul>
+
+        <h3>Future features</h3>
+        <ul>
+            <li>Change white card text on-the-fly</li>
+            <li>Allow 3 options at the start of each round for which black cards is used.</li>
         </ul>
 
         <h3>Contributing</h3>
