@@ -170,7 +170,8 @@ class Game implements MessageComponentInterface
     /**
      * @return SplObjectStorage
      */
-    public function getConnectedClients() {
+    public function getConnectedClients()
+    {
         return $this->clients;
     }
 
@@ -200,6 +201,27 @@ class Game implements MessageComponentInterface
             $this->messenger->sendMessage($player->getConnection(), [
                 'type' => 'answer_card_update',
                 'cards' => $player->cards
+            ]);
+        }
+
+        if ($this->status == self::GAME_STATUS_JUDGE_CHOOSING) {
+            // Don't want to let them join in this round - wait until next
+        }
+        elseif ($this->status == self::GAME_STATUS_PLAYERS_CHOOSING) {
+            // They've joined mid-way through a round - let them in!
+            if (count($player->cards) == 0) {
+                $this->answerCardManager->dealAnswerCards([$player]);
+                $this->messenger->sendMessage($player->getConnection(), [
+                    'type' => 'answer_card_update',
+                    'cards' => $player->cards
+                ]);
+            }
+            
+            $this->messenger->sendMessage($player->getConnection(), [
+                'type' => 'round_start',
+                'questionCard' => $this->questionCardManager->currentQuestion,
+                'currentJudge' => $this->playerManager->getJudge(),
+                'players' => $this->playerManager->getActivePlayers(),
             ]);
         }
 
