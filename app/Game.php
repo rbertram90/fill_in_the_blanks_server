@@ -335,6 +335,8 @@ class Game implements MessageComponentInterface
         // Ensure player has not already played cards this round
         if (count($player->cardsInPlay) > 0) return;
 
+        $realCards = [];
+
         // Save who played the card
         foreach ($cards as $card) {
             $id = $card['id'];
@@ -343,6 +345,8 @@ class Game implements MessageComponentInterface
             $realCard = $this->answerCardManager->getAnswerCard($id);
             $realCard->text = $text;
 
+            $realCards[] = $realCard;
+
             $this->cardsInPlay[$id] = [
                 'card' => $realCard,
                 'player' => $player
@@ -350,7 +354,7 @@ class Game implements MessageComponentInterface
         }
 
         // Update player
-        $player->playCards($cards);
+        $player->playCards($realCards);
 
         // send message to all clients that user has submitted
         $this->messenger->sendToAll([

@@ -14,7 +14,7 @@ class Player
     /** @var rbwebdesigns\fill_in_the_blanks\Card[] white cards in hand */
     public $cards;
 
-    /** @var int[] white cards that have been submitted for this round */
+    /** @var rbwebdesigns\fill_in_the_blanks\Card[] white cards that have been submitted for this round */
     public $cardsInPlay;
 
     /** @var rbwebdesigns\fill_in_the_blanks\Game */
@@ -64,7 +64,7 @@ class Player
         foreach ($cards as $card) {
             $c = 0;
             foreach ($this->cards as $playerCard) {
-                if ($playerCard->id == $card) {
+                if ($playerCard->id == $card->id) {
                     array_splice($this->cards, $c, 1);
                     break;
                 }
@@ -76,7 +76,7 @@ class Player
     /**
      * Player has submitted white cards - update
      * 
-     * @param int[] $cards
+     * @param rbwebdesigns\fill_in_the_blanks\Card[] $cards
      */
     public function playCards($cards) {
         $this->status = Game::STATUS_CARDS_CHOSEN;
@@ -109,11 +109,7 @@ class Player
      */
     public function returnCardsToPlayer()
     {
-        // This is a bit messy as we're currently storing cards
-        // in play as an array of integers rather than full cards
-        foreach ($this->cardsInPlay as $cardId) {
-            $this->cards[] = $this->game->answerCardManager->getAnswerCard($cardId);
-        }
+        $this->cards += $this->cardsInPlay;
         $this->cardsInPlay = [];
     }
 }
