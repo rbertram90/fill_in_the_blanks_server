@@ -3,13 +3,20 @@ namespace rbwebdesigns\fill_in_the_blanks;
 
 class PlayerManager
 {
+    /** @var rbwebdesigns\fill_in_the_blanks\Player[] */
     protected $players;
+
+    /** @var rbwebdesigns\fill_in_the_blanks\Player */
     protected $currentPlayer;
 
-    public function __construct()
+    /** @var rbwebdesigns\fill_in_the_blanks\Game */
+    protected $game;
+
+    public function __construct($game)
     {
         $this->players = [];
         $this->currentPlayer = null;
+        $this->game = $game;
     }
 
     /**
@@ -29,14 +36,14 @@ class PlayerManager
         $player = $this->getPlayerByUsername($data['username']);
         if (!is_null($player)) {
             if ($player->isActive) {
-                return false;
+                throw new \Exception('Duplicate username', Game::E_DUPLICATE_USERNAME);
             }
             $player->setConnection($conn);
             $player->isActive = true;
             return $player;
         }
 
-        $player = new Player($conn);
+        $player = new Player($conn, $this->game);
         $player->username = $data['username'];
         $player->ip = $conn->remoteAddress;
         if (count($this->players) == 0) $player->isGameHost = true;
@@ -111,7 +118,7 @@ class PlayerManager
     {
         foreach ($this->players as $player) {
             if ($player->getConnection()->resourceId == $resourceId) {
-                $player->isActive = false;
+                $player->setInactive();
                 return $player;
             }
         }
@@ -171,5 +178,14 @@ class PlayerManager
             $player->reset();
         }
         $this->currentPlayer = $activePlayers[0];
+    }
+
+    /**
+     * Make sure all players have empty hand at round start
+     */
+    public function clearCardsInPlay() {
+        foreach ($this->players as $player) {
+            $player->cardsInPlay = [];
+        }
     }
 }

@@ -8,25 +8,41 @@ class Game implements MessageComponentInterface
 {
     protected $clients;
     protected $playerManager;
-    protected $questionCardManager;
-    protected $answerCardManager;    
     protected $cardsInPlay;
+    protected $status;
+    protected $messenger;
 
+    public $questionCardManager = null;
+    public $answerCardManager = null;
     public static $minPlayers = 2;
 
+    // Player statuses
     public const STATUS_JUDGE = 'Card czar';
     public const STATUS_IN_PLAY = 'Choosing card(s)';
+    public const STATUS_CARDS_CHOSEN = 'Card(s) submitted';
     public const STATUS_CONNECTED = 'Connected';
+    public const STATUS_DISCONNECTED = 'Disconnected';
 
+    // Game states
+    public const GAME_STATUS_AWAITING_START = 0;
+    public const GAME_STATUS_PLAYERS_CHOOSING = 1;
+    public const GAME_STATUS_JUDGE_CHOOSING = 2;
+    public const GAME_STATUS_ROUND_WON = 3;
+
+    // Exception codes
+    public const E_DUPLICATE_USERNAME = 1;
+    
     /**
      * Game constructor
      */
     public function __construct()
     {
         $this->clients = new \SplObjectStorage;
-        $this->playerManager = new PlayerManager;
+        $this->playerManager = new PlayerManager($this);
         $this->questionCardManager = new QuestionCardManager;
         $this->answerCardManager = new AnswerCardManager;
+        $this->messenger = new Messenger($this);
+        $this->status = self::GAME_STATUS_AWAITING_START;
     }
 
     /**
@@ -59,23 +75,36 @@ class Game implements MessageComponentInterface
                 break;
 
             case 'start_game':
+                // Check game state
+                if ($this->status !== self::GAME_STATUS_AWAITING_START) break;
+
                 $this->start();
                 break;
 
             case 'next_round':
+                // Check game state
+                if ($this->status !== self::GAME_STATUS_ROUND_WON) break;
+
                 $this->nextRound();
                 break;
 
             case 'cards_submit':
+                // Check game state
+                if ($this->status !== self::GAME_STATUS_PLAYERS_CHOOSING) break;
+
                 $this->answerSubmitted($from, $data);
                 break;
 
             case 'winner_picked':
+                // Ensure we're still in judge choosing mode
+                if ($this->status !== self::GAME_STATUS_JUDGE_CHOOSING) break;
+
                 $winningCard = $data['card'];
                 $winner = $this->cardsInPlay[$winningCard]['player'];
                 $winner->score += 1;
+                $this->status = self::GAME_STATUS_ROUND_WON;
                 
-                $this->sendToAll([
+                $this->messenger->sendToAll([
                     'type' => 'round_winner',
                     'winner' => $winner,
                     'players' => $this->playerManager->getActivePlayers(),
@@ -84,14 +113,7 @@ class Game implements MessageComponentInterface
                 break;
 
             case 'reset_game':
-                $this->playerManager->resetPlayers();
-                $this->questionCardManager->resetDeck();
-                $this->answerCardManager->resetDeck();
-                $this->cardsInPlay = [];
-                $this->sendToAll([
-                    'type' => 'game_reset',
-                    'players' => $this->playerManager->getActivePlayers(),
-                ]);
+                $this->reset();
                 break;
         }
     }
@@ -102,14 +124,40 @@ class Game implements MessageComponentInterface
         $this->clients->detach($conn);
         echo "Connection {$conn->resourceId} has disconnected\n";
 
-        $player = $this->playerManager->markPlayerAsInactive($conn->resourceId);
+        $disconnectedPlayer = $this->playerManager->markPlayerAsInactive($conn->resourceId);
         
-        if ($player) {
-            $this->sendToAll([
+        if ($disconnectedPlayer) {
+            $this->messenger->sendToAll([
                 'type' => 'player_disconnected',
-                'playerName' => $player->username,
+                'playerName' => $disconnectedPlayer->username,
                 'players' => $this->playerManager->getActivePlayers(),
             ]);
+
+            if ($this->status == self::GAME_STATUS_JUDGE_CHOOSING || $this->status == self::GAME_STATUS_PLAYERS_CHOOSING) {
+                if ($disconnectedPlayer->username == $this->playerManager->getJudge()->username) {
+                    // Return all played white cards to players
+                    foreach ($this->playerManager->getAllPlayers() as $player) {
+                        $player->returnCardsToPlayer();
+                    }
+                    // Start next round
+                    $this->nextRound();
+                }
+                else {
+                    // Remove the cards from available selection
+                    $remainingCards = [];
+                    foreach ($this->cardsInPlay as $cardData) {
+                        if ($cardData['player']->username !== $disconnectedPlayer->username) {
+                            $remainingCards[$cardData['card']->id] = $cardData;
+                        }
+                    }
+                    $this->cardsInPlay = $remainingCards;
+
+                    print count($this->cardsInPlay);
+
+                    // restart judging process
+                    if ($this->allPlayersDone()) $this->startJudging();
+                }
+            }
         }
     }
 
@@ -117,6 +165,13 @@ class Game implements MessageComponentInterface
     {
         echo "An error has occurred: {$e->getMessage()}\n";
         $conn->close();
+    }
+
+    /**
+     * @return SplObjectStorage
+     */
+    public function getConnectedClients() {
+        return $this->clients;
     }
 
     /**
@@ -128,18 +183,21 @@ class Game implements MessageComponentInterface
     protected function addPlayer($from, $data)
     {
         // Connect player to game
-        $player = $this->playerManager->connectPlayer($data, $from);
-
-        // If no player returned then this username was in-use
-        if (!$player) {
-            $from->send('{ "type": "duplicate_username" }');
-            $from->close(); // @todo test this
-            return;
+        try {
+            $player = $this->playerManager->connectPlayer($data, $from);
+        }
+        catch (\Exception $e) {
+            switch ($e->getCode()) {
+                case self::E_DUPLICATE_USERNAME:
+                    $from->send('{ "type": "duplicate_username" }');
+                    $from->close();
+                    return;
+            }
         }
 
         // If they're reconnecting and have cards then send them the data
         if (count($player->cards) > 0) {
-            $this->sendMessage($player->getConnection(), [
+            $this->messenger->sendMessage($player->getConnection(), [
                 'type' => 'answer_card_update',
                 'cards' => $player->cards
             ]);
@@ -148,7 +206,7 @@ class Game implements MessageComponentInterface
         // @todo Send them current question?
 
         // Notify all players
-        $this->sendToAll([
+        $this->messenger->sendToAll([
             'type' => 'player_connected',
             'playerName' => $player->username,
             'host' => $player->isGameHost,
@@ -161,22 +219,27 @@ class Game implements MessageComponentInterface
      */
     protected function start()
     {
+        // Check we've got enough players
         if ($this->clients->count() < self::$minPlayers) {
-            $this->sendToHost([
+            $this->messenger->sendToHost([
                 'type' => 'start_game_fail',
                 'message' => 'Not enough players (minimum ' . self::$minPlayers . ')'
             ]);
             return;
         }
 
+        // Update player status
         $activePlayers = $this->playerManager->getActivePlayers();
         foreach ($activePlayers as $player) $player->status = self::STATUS_IN_PLAY;
 
         $judge = $this->playerManager->getJudge();
         $judge->status = self::STATUS_JUDGE;
 
+        // Update game status
+        $this->status = self::GAME_STATUS_PLAYERS_CHOOSING;
+
         $this->distributeAnswerCards();
-        $this->sendToAll([
+        $this->messenger->sendToAll([
             'type' => 'round_start',
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
             'currentJudge' => $judge,
@@ -185,46 +248,37 @@ class Game implements MessageComponentInterface
         $this->cardsInPlay = [];
     }
 
+    /**
+     * Reset the game state
+     */
+    protected function reset()
+    {
+        $this->status = self::GAME_STATUS_AWAITING_START;
+        $this->playerManager->resetPlayers();
+        $this->questionCardManager->resetDeck();
+        $this->answerCardManager->resetDeck();
+        $this->cardsInPlay = [];
+        $this->messenger->sendToAll([
+            'type' => 'game_reset',
+            'players' => $this->playerManager->getActivePlayers(),
+        ]);
+    }
+
+    /**
+     * Progress to the next round
+     */
     protected function nextRound()
     {
+        $this->status = self::GAME_STATUS_PLAYERS_CHOOSING;
         $this->distributeAnswerCards();
-        $this->sendToAll([
+        $this->playerManager->clearCardsInPlay();
+        $this->messenger->sendToAll([
             'type' => 'round_start',
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
             'currentJudge' => $this->playerManager->nextJudge(),
             'players' => $this->playerManager->getActivePlayers(),
         ]);
         $this->cardsInPlay = [];
-    }
-
-    /**
-     * Send a message to a single client
-     */
-    protected function sendMessage($client, $data)
-    {
-        print "Sending message to ({$client->resourceId}): {$data['type']}".PHP_EOL;
-        $msg = json_encode($data);
-        $client->send($msg);
-    }
-
-    /**
-     * Send a message to all connected clients
-     */
-    protected function sendToAll($data)
-    {
-        foreach ($this->clients as $client) {
-            $this->sendMessage($client, $data);
-        }
-    }
-
-    /**
-     * Send message to the game host
-     */
-    protected function sendToHost($data)
-    {
-        // Send to host - assuming host is always client 0
-        $this->clients->rewind();
-        $this->sendMessage($this->clients->current(), $data);
     }
 
     /**
@@ -238,7 +292,7 @@ class Game implements MessageComponentInterface
         // Send seperate message to each player with cards
         foreach ($players as $player) {
             $connection = $player->getConnection();
-            $this->sendMessage($connection, [
+            $this->messenger->sendMessage($connection, [
                 'type' => 'answer_card_update',
                 'cards' => $player->cards
             ]);
@@ -256,7 +310,10 @@ class Game implements MessageComponentInterface
         $cards = $data['cards']; // Array of card IDs
         $player = $this->playerManager->getPlayerByResourceId($from->resourceId);
         
-        // Store who played the card
+        // Ensure player has not already played cards this round
+        if (count($player->cardsInPlay) > 0) return;
+
+        // Save who played the card
         foreach ($cards as $card) {
             $this->cardsInPlay[$card] = [
                 'card' => $this->answerCardManager->getAnswerCard($card),
@@ -264,36 +321,45 @@ class Game implements MessageComponentInterface
             ];
         }
 
-        $player->status = 'Card(s) submitted';
-        $player->cardsInPlay = $cards;
-        $player->removeCards($cards);
+        // Update player
+        $player->playCards($cards);
 
         // send message to all clients that user has submitted
-        $this->sendToAll([
+        $this->messenger->sendToAll([
             'type' => 'player_submitted',
             'playerName' => $player->username,
             'players' => $this->playerManager->getActivePlayers(),
         ]);
 
-        if ($this->allPlayersDone()) {
-            // Ensure the username is not sent to all players
-            $safeCardData = [];
-            foreach ($this->cardsInPlay as $card) {
-                $playerId = $card['player']->getConnection()->resourceId;
-                if (!array_key_exists($playerId, $safeCardData)) $safeCardData[$playerId] = [];
-                $safeCardData[$playerId][] = $card['card'];
-            }
+        // Check if all players have submitted cards
+        if ($this->allPlayersDone()) $this->startJudging();
+    }
 
-            // Now remove player Ids keys!
-            $safeCardData = array_values($safeCardData);
+    /**
+     * Once all players have submitted their white cards for the round
+     * this function is called
+     */
+    protected function startJudging()
+    {
+        $this->status = self::GAME_STATUS_JUDGE_CHOOSING;
 
-            // Send message to all players revealing the cards
-            $this->sendToAll([
-                'type' => 'round_judge',
-                'currentJudge' => $this->playerManager->getJudge(),
-                'allCards' => $safeCardData
-            ]);
+        // Ensure the username is not sent to players
+        $safeCardData = [];
+        foreach ($this->cardsInPlay as $card) {
+            $playerId = $card['player']->getConnection()->resourceId;
+            if (!array_key_exists($playerId, $safeCardData)) $safeCardData[$playerId] = [];
+            $safeCardData[$playerId][] = $card['card'];
         }
+
+        // Now remove player Ids keys!
+        $safeCardData = array_values($safeCardData);
+
+        // Send message to all players revealing the cards
+        $this->messenger->sendToAll([
+            'type' => 'round_judge',
+            'currentJudge' => $this->playerManager->getJudge(),
+            'allCards' => $safeCardData
+        ]);
     }
 
     /**

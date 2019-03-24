@@ -92,6 +92,7 @@ var handleMessage = function(e) {
             updatePlayerList();
             questionWrapper.innerHTML = "<i>Awaiting game start</i>";
             answersWrapper.innerHTML = "<i>Awaiting game start</i>";
+            showServerMessage('Game has been reset', 'success');
             playCardsButton.disabled = true;
             if (clientIsGameHost) startGameButton.disabled = false;
             break;
