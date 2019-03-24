@@ -19,7 +19,7 @@ class Player
     {
         $this->connection = $connection;
         $this->isActive = true;
-        $this->status = 'Connected';
+        $this->status = Game::STATUS_CONNECTED;
         $this->reset();
     }
 

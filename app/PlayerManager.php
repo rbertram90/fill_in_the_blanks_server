@@ -86,6 +86,20 @@ class PlayerManager
     }
 
     /**
+     * Get all players currently connected
+     */
+    public function getActivePlayers()
+    {
+        $active = [];
+        foreach ($this->players as $player) {
+            if ($player->isActive) {
+                $active[] = $player;
+            }
+        }
+        return $active;
+    }
+
+    /**
      * When a player disconnects we don't want to completely
      * remove them from the game as it could just be a temporary
      * network issue. There record is kept in game but marked as
@@ -120,13 +134,26 @@ class PlayerManager
     public function nextJudge()
     {
         $index = 0;
-        foreach ($this->players as $player) {
+        $activePlayers = $this->getActivePlayers();
+
+        if (!$this->currentPlayer->isActive) {
+            // Current judge has disconnected
+            $this->currentPlayer = $activePlayers[0];
+            $this->currentPlayer->status = Game::STATUS_JUDGE;
+            return $this->currentPlayer;
+        }
+
+        foreach ($activePlayers as $player) $player->status = Game::STATUS_IN_PLAY;
+
+        foreach ($activePlayers as $player) {
             if ($player->username == $this->currentPlayer->username) {
-                if (count($this->players) > $index + 1) {
-                    $this->currentPlayer = $this->players[$index + 1];
+                if (count($activePlayers) > $index + 1) {
+                    $this->currentPlayer = $activePlayers[$index + 1];
+                    $this->currentPlayer->status = Game::STATUS_JUDGE;
                     break;
                 }
-                $this->currentPlayer = $this->players[0];
+                $this->currentPlayer = $activePlayers[0];
+                $this->currentPlayer->status = Game::STATUS_JUDGE;
                 break;
             }
             $index++;
@@ -138,9 +165,11 @@ class PlayerManager
      * Reset player data
      */
     public function resetPlayers() {
-        foreach ($this->players as $player) {
+        $activePlayers = $this->getActivePlayers();
+
+        foreach ($activePlayers as $player) {
             $player->reset();
         }
-        $this->currentPlayer = $this->players[0];
+        $this->currentPlayer = $activePlayers[0];
     }
 }

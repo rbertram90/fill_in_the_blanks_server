@@ -14,6 +14,10 @@ class Game implements MessageComponentInterface
 
     public static $minPlayers = 2;
 
+    public const STATUS_JUDGE = 'Card czar';
+    public const STATUS_IN_PLAY = 'Choosing card(s)';
+    public const STATUS_CONNECTED = 'Connected';
+
     /**
      * Game constructor
      */
@@ -55,7 +59,7 @@ class Game implements MessageComponentInterface
                 break;
 
             case 'start_game':
-                $this->startGame();
+                $this->start();
                 break;
 
             case 'next_round':
@@ -63,47 +67,7 @@ class Game implements MessageComponentInterface
                 break;
 
             case 'cards_submit':
-                $cards = $data['cards']; // Array of card IDs
-                $player = $this->playerManager->getPlayerByResourceId($from->resourceId);
-                
-                // Store who played the card
-                foreach ($cards as $card) {
-                    $this->cardsInPlay[$card] = [
-                        'card' => $this->answerCardManager->getAnswerCard($card),
-                        'player' => $player
-                    ];
-                }
-
-                $player->status = 'Waiting';
-                $player->cardsInPlay = $cards;
-                $player->removeCards($cards);
-
-                // send message to all clients that user has submitted
-                $this->sendToAll([
-                    'type' => 'player_submitted',
-                    'playerName' => $player->username,
-                    'players' => $this->playerManager->getAllPlayers(),
-                ]);
-
-                if ($this->allPlayersDone()) {
-                    // Ensure the username is not sent to all players
-                    $safeCardData = [];
-                    foreach ($this->cardsInPlay as $card) {
-                        $playerId = $card['player']->getConnection()->resourceId;
-                        if (!array_key_exists($playerId, $safeCardData)) $safeCardData[$playerId] = [];
-                        $safeCardData[$playerId][] = $card['card'];
-                    }
-
-                    // Now remove player Ids keys!
-                    $safeCardData = array_values($safeCardData);
-
-                    // Send message to all players revealing the cards
-                    $this->sendToAll([
-                        'type' => 'round_judge',
-                        'currentJudge' => $this->playerManager->getJudge(),
-                        'allCards' => $safeCardData
-                    ]);
-                }
+                $this->answerSubmitted($from, $data);
                 break;
 
             case 'winner_picked':
@@ -114,7 +78,7 @@ class Game implements MessageComponentInterface
                 $this->sendToAll([
                     'type' => 'round_winner',
                     'winner' => $winner,
-                    'players' => $this->playerManager->getAllPlayers(),
+                    'players' => $this->playerManager->getActivePlayers(),
                     'card' => $winningCard
                 ]);
                 break;
@@ -126,7 +90,7 @@ class Game implements MessageComponentInterface
                 $this->cardsInPlay = [];
                 $this->sendToAll([
                     'type' => 'game_reset',
-                    'players' => $this->playerManager->getAllPlayers(),
+                    'players' => $this->playerManager->getActivePlayers(),
                 ]);
                 break;
         }
@@ -144,7 +108,7 @@ class Game implements MessageComponentInterface
             $this->sendToAll([
                 'type' => 'player_disconnected',
                 'playerName' => $player->username,
-                'players' => $this->playerManager->getAllPlayers(),
+                'players' => $this->playerManager->getActivePlayers(),
             ]);
         }
     }
@@ -178,7 +142,7 @@ class Game implements MessageComponentInterface
             $this->sendMessage($player->getConnection(), [
                 'type' => 'answer_card_update',
                 'cards' => $player->cards
-            ]); 
+            ]);
         }
 
         // @todo Send them current question?
@@ -188,14 +152,14 @@ class Game implements MessageComponentInterface
             'type' => 'player_connected',
             'playerName' => $player->username,
             'host' => $player->isGameHost,
-            'players' => $this->playerManager->getAllPlayers(),
+            'players' => $this->playerManager->getActivePlayers(),
         ]);
     }
 
     /**
      * Try and start the game - will fail if not enough players are connected
      */
-    protected function startGame()
+    protected function start()
     {
         if ($this->clients->count() < self::$minPlayers) {
             $this->sendToHost([
@@ -205,11 +169,18 @@ class Game implements MessageComponentInterface
             return;
         }
 
+        $activePlayers = $this->playerManager->getActivePlayers();
+        foreach ($activePlayers as $player) $player->status = self::STATUS_IN_PLAY;
+
+        $judge = $this->playerManager->getJudge();
+        $judge->status = self::STATUS_JUDGE;
+
         $this->distributeAnswerCards();
         $this->sendToAll([
             'type' => 'round_start',
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
-            'currentJudge' => $this->playerManager->getJudge()
+            'currentJudge' => $judge,
+            'players' => $activePlayers,
         ]);
         $this->cardsInPlay = [];
     }
@@ -220,7 +191,8 @@ class Game implements MessageComponentInterface
         $this->sendToAll([
             'type' => 'round_start',
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
-            'currentJudge' => $this->playerManager->nextJudge()
+            'currentJudge' => $this->playerManager->nextJudge(),
+            'players' => $this->playerManager->getActivePlayers(),
         ]);
         $this->cardsInPlay = [];
     }
@@ -260,7 +232,7 @@ class Game implements MessageComponentInterface
      */
     protected function distributeAnswerCards()
     {
-        $players = $this->playerManager->getAllPlayers();
+        $players = $this->playerManager->getActivePlayers();
         $this->answerCardManager->dealAnswerCards($players);
         
         // Send seperate message to each player with cards
@@ -274,6 +246,57 @@ class Game implements MessageComponentInterface
     }
 
     /**
+     * Player has submitted answer
+     * 
+     * @param ConnectionInterface $from
+     * @param array $data
+     */
+    protected function answerSubmitted($from, $data)
+    {
+        $cards = $data['cards']; // Array of card IDs
+        $player = $this->playerManager->getPlayerByResourceId($from->resourceId);
+        
+        // Store who played the card
+        foreach ($cards as $card) {
+            $this->cardsInPlay[$card] = [
+                'card' => $this->answerCardManager->getAnswerCard($card),
+                'player' => $player
+            ];
+        }
+
+        $player->status = 'Card(s) submitted';
+        $player->cardsInPlay = $cards;
+        $player->removeCards($cards);
+
+        // send message to all clients that user has submitted
+        $this->sendToAll([
+            'type' => 'player_submitted',
+            'playerName' => $player->username,
+            'players' => $this->playerManager->getActivePlayers(),
+        ]);
+
+        if ($this->allPlayersDone()) {
+            // Ensure the username is not sent to all players
+            $safeCardData = [];
+            foreach ($this->cardsInPlay as $card) {
+                $playerId = $card['player']->getConnection()->resourceId;
+                if (!array_key_exists($playerId, $safeCardData)) $safeCardData[$playerId] = [];
+                $safeCardData[$playerId][] = $card['card'];
+            }
+
+            // Now remove player Ids keys!
+            $safeCardData = array_values($safeCardData);
+
+            // Send message to all players revealing the cards
+            $this->sendToAll([
+                'type' => 'round_judge',
+                'currentJudge' => $this->playerManager->getJudge(),
+                'allCards' => $safeCardData
+            ]);
+        }
+    }
+
+    /**
      * Checks if all players have submitted their cards for this round
      * 
      * @return bool true if all players have submitted cards
@@ -282,7 +305,7 @@ class Game implements MessageComponentInterface
     {
         $judge = $this->playerManager->getJudge();
 
-        foreach ($this->playerManager->getAllPlayers() as $player) {
+        foreach ($this->playerManager->getActivePlayers() as $player) {
             if ($player->username == $judge->username) continue;
             if (count($player->cardsInPlay) == 0) {
                 return false;

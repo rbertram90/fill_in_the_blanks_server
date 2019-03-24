@@ -41,10 +41,11 @@ var handleMessage = function(e) {
             break;
 
         case 'round_start':
-            showServerMessage("Round started");
             questionWrapper.innerHTML = data.questionCard.text;
             currentJudge = data.currentJudge.username;
             cardsSelectable = currentJudge !== usernameField.value;
+
+            showServerMessage("Round started - <strong>" + currentJudge + "</strong> is the card czar.");
             document.querySelector(".judging_inner").innerHTML = "";
             document.querySelector("#judging_outer > h2").innerHTML = "";
             if (cardsSelectable) {
@@ -54,6 +55,8 @@ var handleMessage = function(e) {
             else {
                 showServerMessage("Waiting for other players to choose card(s)");
             }
+            playerList = data.players;
+            updatePlayerList();
             break;
 
         case 'start_game_fail':
@@ -207,9 +210,11 @@ var submitCards = function (event) {
  */
 var highlightWinner = function (e) {
     if (userIsPicking) {
-        for (card in document.querySelectorAll(".judging_inner .card")) {
-            card.className = "card";
+        var allCards = document.querySelectorAll(".judging_inner .card");
+        for (i = 0; i < allCards.length; ++i) {
+            allCards[i].className = "card";
         }
+
         // Toggle active class
         if (this.className.indexOf('active') > -1) {
             this.className = "card";
@@ -310,7 +315,7 @@ var showPlayerSubmissions = function (cards) {
  * Update the players table markup
  */
 var updatePlayerList = function() {
-    var output = "<table cellpadding='5' cellspacing='1' width='100%'><tr><th></th><th>Username</th><th>Score</th><th>Status</th></tr>";
+    var output = "<table cellpadding='5' cellspacing='1' width='100%'><tr><th></th><th>Username</th><th>Score</th><th>Status</th><th>Czar</th></tr>";
     for (var p = 0; p < playerList.length; p++) {
         var player = playerList[p];
         if (!player.isActive) continue;
@@ -325,7 +330,8 @@ var updatePlayerList = function() {
         output += '<td>' + (player.isGameHost ? 'H' : '') + '</td>';
         output += '<td>' + player.username + '</td>';
         output += '<td>' + player.score + '</td>';
-        output += '<td>' + player.status + '</td></tr>';
+        output += '<td>' + player.status + '</td>';
+        output += '<td>' + (player.username == currentJudge ? 'X' : '')  + '</td></tr>';
     }
     userList.innerHTML = output + "</table>";
 };

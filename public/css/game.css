@@ -141,6 +141,7 @@ body > aside {
     display: inline-block;
     margin-right: 10px;
     cursor: pointer;
+    user-select: none;
 }
     .card.active {
         border: 5px solid blue;
