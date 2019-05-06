@@ -70,13 +70,14 @@ body > header {
 
 body > main {
     grid-area: main;
-    padding: 20px;
+    padding: 10px 0 10px 10px;
 }
 body > aside {
     grid-area: sidebar;
     margin: 10px;
 }
-    body > aside h2 {
+    body > aside h2,
+    body > main h2 {
         color: white;
         background-color: #25186b;
         margin: 0 0 .5em 0;
@@ -114,8 +115,8 @@ body > aside {
         color: #fff;
         padding: 10px;
         margin: -10px 10px -10px -64px;
-        border-top-left-radius: 2px;
-        border-bottom-left-radius: 2px;
+        border-top-left-radius: 3px;
+        border-bottom-left-radius: 3px;
         display: inline-block;
         width: 34px;
     }
@@ -128,6 +129,10 @@ body > aside {
 
 #user_list {
     margin-bottom: 20px;
+    padding: 10px;
+    background-color: #2f3133;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
 }
     #user_list td,
     #user_list th {
@@ -135,6 +140,15 @@ body > aside {
         color: white;
         font-family: monospace;
     }
+
+.not-active-message {
+    background-color: #666;
+    padding: 10px;
+    font-size: 14px;
+    font-style: italic;
+    border-radius: 3px;
+    margin: 0;
+}
 
 #client_status {
     padding: 10px;
@@ -150,10 +164,12 @@ body > aside {
         background-color: #9b1009;
     }
 
-#question {
+.question {
     background-color: black;
     color: white;
     padding: 10px;
+    margin: 0;
+    border-radius: 3px;
 }
 
 #answers {
@@ -182,6 +198,39 @@ body > aside {
         border: 5px solid green;
     }
 
-#judging_outer {
-    display: none;
+#host_controls_inner {
+    background-color: #2f3133;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+#host_controls_inner button {
+    margin-right: 10px;
+}
+
+button {
+    background-color: #f6f6f6;
+    border-radius: 3px;
+    padding: 8px 14px;
+    display: inline-block;
+    border: 0;
+    cursor: pointer;
+}
+button:hover {
+    background-color: #e0e0e0;
+}
+button:disabled {
+    background-color: #e0e0e0;
+}
+
+#host_control_inner,
+#question_outer,
+#judging_outer,
+#answers_outer {
+    overflow: auto;
+    padding: 10px;
+    background-color: #2f3133;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    margin-bottom: 20px;
 }

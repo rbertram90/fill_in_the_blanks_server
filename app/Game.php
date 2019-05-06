@@ -72,6 +72,14 @@ class Game implements MessageComponentInterface
         switch ($data['action']) {
             case 'player_connected':
                 $this->addPlayer($from, $data);
+
+                // Return a message to the player with the game state so
+                // they are updated
+                $this->messenger->sendMessage($from, [
+                    'type' => 'connected_game_status',
+                    'game_status' => $this->status,
+                    'judge' => $this->playerManager->getJudge()
+                ]);
                 break;
 
             case 'start_game':

@@ -143,6 +143,8 @@ class PlayerManager
         $index = 0;
         $activePlayers = $this->getActivePlayers();
 
+        if (count($activePlayers) == 0) return null;
+
         if (!$this->currentPlayer->isActive) {
             // Current judge has disconnected
             $this->currentPlayer = $activePlayers[0];
