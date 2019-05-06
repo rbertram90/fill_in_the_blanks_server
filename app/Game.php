@@ -152,8 +152,6 @@ class Game implements MessageComponentInterface
                     }
                     $this->cardsInPlay = $remainingCards;
 
-                    print count($this->cardsInPlay);
-
                     // restart judging process
                     if ($this->allPlayersDone()) $this->startJudging();
                 }

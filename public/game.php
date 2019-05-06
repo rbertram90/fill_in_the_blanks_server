@@ -6,10 +6,13 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Fill in the Blanks game client</title>
     <link rel="stylesheet" type="text/css" href="/css/game.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro" rel="stylesheet"> 
+    <!-- https://www.dafont.com/karmatic-arcade.font -->
 </head>
 <body>
     <header>
-        <h1>Fill in the Blanks</h1>
+        <img src="/images/logo.png" class="logo" alt="Fill in the Blanks">
 
         <form id="connect_form">
             <div class="field">
@@ -55,7 +58,6 @@
             <button id="reset_game" type="button">Reset game</button>
         </div>
 
-        <h2>Current question</h2>
         <div id="question"><i>Connection to server required</i></div>
 
         <div id="judging_outer">
@@ -63,7 +65,6 @@
             <div class="judging_inner"></div>
         </div>
 
-        <h2>Your cards</h2>
         <button id="play_cards" type="button" disabled>Play card(s)</button>
         <div id="answers">
             <p><i>Awaiting game start</i></p>
@@ -71,7 +72,7 @@
     </main>
 
     <aside>
-        <h2>Messages</h2>
+        <h2>Game Messages</h2>
         <div id="server_messages"></div>
 
         <h2>Players</h2>

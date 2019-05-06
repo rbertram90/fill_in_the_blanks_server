@@ -23,6 +23,7 @@ var playerList = [];
 var currentJudge = "";
 var cardsSelectable = false;
 var cards = null;
+var messageIndex = 0;
 
 var handleMessage = function(e) {
     var data = JSON.parse(e.data);
@@ -151,6 +152,23 @@ var createServerConnection = function () {
     };
 };
 
+
+var animateCSS = function (element, animationName, callback)
+{
+    var node = document.querySelector(element)
+    node.classList.add('animated', animationName)
+
+    function handleAnimationEnd() {
+        console.log(node);
+        node.classList.remove('animated', animationName)
+        node.removeEventListener('animationend', handleAnimationEnd)
+
+        if (typeof callback === 'function') callback()
+    }
+
+    node.addEventListener('animationend', handleAnimationEnd)
+};
+
 /**
  * Add a message to the messages panel
  * 
@@ -159,7 +177,28 @@ var createServerConnection = function () {
  */
 var showServerMessage = function(text, type='info') {
     var d = new Date();
-    serverMessages.innerHTML = "<p class='message " + type + "' title='Added at " + d.getHours() + ':' + d.getMinutes() + "'>" + text + "</p>" + serverMessages.innerHTML;
+    var hours = "0" + d.getHours();
+    var minutes = "0" + d.getMinutes();
+    var time = hours.substring(hours.length - 2) + ':' + minutes.substring(minutes.length - 2);
+    // serverMessages.innerHTML = "<p class='message " + type + "' id='message" + messageIndex + "' title='Added at " + time + "' data-added-at='" + time + "'>" + text + "</p>" + serverMessages.innerHTML;
+
+    var message = document.createElement('p');
+    message.id = 'message' + messageIndex;
+    message.className = 'message ' + type;
+    message.setAttribute('title', 'Added at ' + time);
+    message.setAttribute('data-added-at', time);
+    message.innerHTML = text;
+
+    if (messageIndex > 0) {
+        serverMessages.insertBefore(message, document.getElementById('message' + (messageIndex-1)));
+    }
+    else {
+        serverMessages.appendChild(message);
+    }
+
+    animateCSS('#message' + messageIndex, 'flipInX');
+
+    messageIndex++;
 };
 
 /**
@@ -182,7 +221,7 @@ var selectCard = function (event) {
 /**
  * Click handler for submit card(s) button
  * 
- * @param {event} event 
+ * @param {event} event
  */
 var submitCards = function (event) {
     var activeCards = document.querySelectorAll('#answers .card.active');
@@ -389,3 +428,4 @@ playCardsButton.addEventListener('click', submitCards);
 resetGameButton.addEventListener('click', resetGame);
 
 showServerMessage('Welcome to Fill in the Blanks!');
+showServerMessage('To start playing, enter the host details, pick your player name, and click <strong>Connect</strong>.');

@@ -40,7 +40,7 @@ class Messenger
     /**
      * Send message to the game host
      */
-    protected function sendToHost($data)
+    public function sendToHost($data)
     {
         $clients = $this->game->getConnectedClients();
 
