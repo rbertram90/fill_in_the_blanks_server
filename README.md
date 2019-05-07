@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/rbertram90/fill_in_the_blanks/master/public/images/logo.png" width="300" alt="Fill in the Blanks logo">
+
 ## PHP Fill in the Blanks game server
 This application contains both client and server code for a 'Cards Against Humanity' style game.
 

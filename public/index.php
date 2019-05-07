@@ -6,29 +6,19 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Fill in the Blanks</title>
     <link rel="stylesheet" type="text/css" href="/css/front.css">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet"> 
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+    <link href="/images/favicon.png" type="image/png" rel="icon">
 </head>
 <body>
 <header>
-    <h1>PHP <i style="color: white;">Fill in the Blanks</i> game</h1>
+    <img src="/images/logo.png" class="logo" alt="Fill in the Blanks">
     <p>Client and server application for a 'Cards Against Humanity' style game.</p>
 </header>
 <main>
     <section>
         <h2>Project status</h2>
-        <p>(17/09/2019) Early stages of development: there are missing features and features that aren't meant to be there (AKA bugs!)</p>
-
-        <h3>On the critical 'fix list'</h3>
-        <ul>
-            <li>Have a game end once the winning score is reached</li>
-            <li><span class="done">Handle client re-connect properly</span> <i>(Improved 24/03/19)</i></li>
-        </ul>
-
-        <h3>Future features</h3>
-        <ul>
-            <li>Change white card text on-the-fly</li>
-            <li>Allow 3 options at the start of each round for which black cards is used.</li>
-        </ul>
+        <p>(07/05/2019) Re-written front-end, added logo</p>
+        <p>(17/03/2019) Early stages of development: there are missing features and features that aren't meant to be there (AKA bugs!)</p>
 
         <h3>Contributing</h3>
         <p>This project is open source, check it out on <a href="https://github.com/rbertram90/fill_in_the_blanks" target="_blank">GitHub</a>. Feel free to open a ticket for a feature request/ bug report, if you want to get your hands dirty, i'm open to pull requests.</p>
