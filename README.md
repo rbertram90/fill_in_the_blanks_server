@@ -1,7 +1,7 @@
-<img src="https://raw.githubusercontent.com/rbertram90/fill_in_the_blanks/master/public/images/logo.png" width="300" alt="Fill in the Blanks logo">
+<img src="https://raw.githubusercontent.com/rbertram90/fill_in_the_blanks_client/master/public/images/logo.png" width="300" alt="Fill in the Blanks logo">
 
-## PHP Fill in the Blanks game server
-This application contains both client and server code for a 'Cards Against Humanity' style game.
+## Fill in the Blanks game server
+This application contains a PHP websocket server for a 'Cards Against Humanity' style game.
 
 ### Client
 The lastest version of the client is available for anyone to use at http://fillintheblanks.rbwebdesigns.co.uk/game.php however it is down to individuals to host the game server as described below.
