@@ -56,5 +56,9 @@ Component.prototype.sendMessage = function (message) {
             if (typeof this.gameReset == 'function')
                 return this.gameReset(message);
             break;
+        case 'server_disconnected':
+            if (typeof this.serverDisconnected == 'function')
+                return this.serverDisconnected(message);
+            break;
     }
 };

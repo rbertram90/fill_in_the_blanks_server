@@ -28,3 +28,7 @@ RoundQuestion.prototype.connectedGameStatus = function (message) {
         this.wrapper.innerHTML = '<p class="not-active-message">Awaiting next round to start</p>';
     }
 };
+
+RoundQuestion.prototype.serverDisconnected = function(message) {
+    this.wrapper.innerHTML = '<p class="not-active-message">Awaiting connection to server</p>';
+};

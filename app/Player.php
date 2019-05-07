@@ -109,7 +109,9 @@ class Player
      */
     public function returnCardsToPlayer()
     {
-        $this->cards += $this->cardsInPlay;
+        foreach ($this->cardsInPlay as $card) {
+            array_push($this->cards, $card);
+        }
         $this->cardsInPlay = [];
     }
 }

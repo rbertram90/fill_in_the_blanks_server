@@ -23,6 +23,10 @@ PlayerList.prototype.playerSubmitted = PlayerList.prototype.triggerRedraw;
 PlayerList.prototype.roundWinner = PlayerList.prototype.triggerRedraw;
 PlayerList.prototype.gameReset = PlayerList.prototype.triggerRedraw;
 
+PlayerList.prototype.serverDisconnected = function(message) {
+    this.wrapper.innerHTML = '<p class="not-active-message">Awaiting connection to server</p>';
+};
+
 PlayerList.prototype.redraw = function() {
     var output = "<table cellpadding='5' cellspacing='1' width='100%'><tr><th></th><th>Username</th><th>Score</th><th>Status</th><th>Czar</th></tr>";
     for (var p = 0; p < this.players.length; p++) {

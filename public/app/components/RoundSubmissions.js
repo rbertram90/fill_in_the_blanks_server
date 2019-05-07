@@ -117,3 +117,7 @@ RoundSubmissions.prototype.pickWinner = function (event) {
     game.socket.send('{ "action": "winner_picked", "card": ' + winningCard.dataset.id + ' }');
 
 };
+
+RoundSubmissions.prototype.serverDisconnected = function(message) {
+    this.wrapper.innerHTML = '<p class="not-active-message">Awaiting connection to server</p>';
+};

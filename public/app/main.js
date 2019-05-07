@@ -1,9 +1,3 @@
-// Buttons
-var playCardsButton = document.getElementById("play_cards");
-var userList = document.getElementById('user_list');
-// var questionWrapper = document.getElementById('question_outer');
-// var answersWrapper = document.getElementById('answers_outer');
-
 /**
  * Class BlanksGame
  */
@@ -34,8 +28,6 @@ function BlanksGame() {
     this.usernameField = document.getElementById('username');
     this.hostField = document.getElementById('connect_host');
     this.portField = document.getElementById('connect_port');
-    
-    // playCardsButton.addEventListener('click', submitCards);
 }
 
 BlanksGame.prototype.handleMessage = function(e) {
@@ -154,6 +146,10 @@ BlanksGame.prototype.createServerConnection = function () {
         game.portField.disabled = false;
         game.statusWrapper.innerHTML = "Not connected";
         game.statusWrapper.className = "disconnected";
+
+        game.updateComponents({
+            type: 'server_disconnected'
+        });
     };
 };
 

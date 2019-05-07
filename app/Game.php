@@ -71,8 +71,6 @@ class Game implements MessageComponentInterface
 
         switch ($data['action']) {
             case 'player_connected':
-                $this->addPlayer($from, $data);
-
                 // Return a message to the player with the game state so
                 // they are updated
                 $this->messenger->sendMessage($from, [
@@ -80,6 +78,8 @@ class Game implements MessageComponentInterface
                     'game_status' => $this->status,
                     'judge' => $this->playerManager->getJudge()
                 ]);
+
+                $this->addPlayer($from, $data);
                 break;
 
             case 'start_game':
@@ -212,9 +212,20 @@ class Game implements MessageComponentInterface
 
         if ($this->status == self::GAME_STATUS_JUDGE_CHOOSING) {
             // Don't want to let them join in this round - wait until next
+            $player->status = self::STATUS_CONNECTED;
         }
         elseif ($this->status == self::GAME_STATUS_PLAYERS_CHOOSING) {
             // They've joined mid-way through a round - let them in!
+
+            // The cards should have been returned when they disconnected
+            // But just in case!
+            if (count($player->cardsInPlay) > 0) {
+                $player->status = self::STATUS_CARDS_CHOSEN;
+            }
+            else {
+                $player->status = self::STATUS_IN_PLAY;
+            }
+            
             if (count($player->cards) == 0) {
                 $this->answerCardManager->dealAnswerCards([$player]);
                 $this->messenger->sendMessage($player->getConnection(), [
@@ -228,6 +239,7 @@ class Game implements MessageComponentInterface
                 'questionCard' => $this->questionCardManager->currentQuestion,
                 'currentJudge' => $this->playerManager->getJudge(),
                 'players' => $this->playerManager->getActivePlayers(),
+                'playerInPlay' => $player->status == self::STATUS_IN_PLAY,
             ]);
         }
 

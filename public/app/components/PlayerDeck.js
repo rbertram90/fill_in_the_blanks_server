@@ -15,14 +15,21 @@ PlayerDeck.prototype.constructor = PlayerDeck;
 
 PlayerDeck.prototype.roundStart = function(message) {
     // Enable / disable play cards button
-    this.playCardsButton.disabled = (message.currentJudge.username === this.game.usernameField.value);
+    if (message.playerInPlay != undefined && message.playerInPlay == 0) {
+        return;
+    }
 
+    this.playCardsButton.disabled = (message.currentJudge.username === this.game.usernameField.value);
     this.game.cardsSelectable = (message.currentJudge.username !== this.game.usernameField.value);
 };
 
 PlayerDeck.prototype.gameReset = function(message) {
     this.wrapper.innerHTML = "<p class='not-active-message'>Awaiting game start</p>";
     this.playCardsButton.disabled = true;
+};
+
+PlayerDeck.prototype.serverDisconnected = function(message) {
+    this.wrapper.innerHTML = '<p class="not-active-message">Awaiting connection to server</p>';
 };
 
 PlayerDeck.prototype.connectedGameStatus = function(message) {
