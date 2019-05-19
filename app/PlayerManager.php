@@ -129,7 +129,7 @@ class PlayerManager
      */
     public function getJudge()
     {
-        if (is_null($this->currentPlayer)) {
+        if (is_null($this->currentPlayer) && count($this->players) > 0) {
             $this->currentPlayer = $this->players[0];
         }
         return $this->currentPlayer;
