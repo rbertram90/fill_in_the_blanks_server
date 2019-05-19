@@ -78,6 +78,12 @@ class QuestionCardManager
         $this->availableCards = [];
         $questionIndex = 0;
         foreach (self::$questions as $questionText) {
+
+            // Double check it's got blank in it
+            if (strpos($questionText, '____') === FALSE) {
+                continue;
+            }
+
             $this->availableCards[] = $this->createCard($questionIndex);
             $questionIndex++;
         }
