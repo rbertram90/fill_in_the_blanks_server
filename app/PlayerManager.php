@@ -45,6 +45,7 @@ class PlayerManager
 
         $player = new Player($conn, $this->game);
         $player->username = $data['username'];
+        $player->icon = $data['icon'];
         $player->ip = $conn->remoteAddress;
         if (count($this->players) == 0) $player->isGameHost = true;
 

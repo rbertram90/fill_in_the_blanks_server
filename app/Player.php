@@ -10,6 +10,7 @@ class Player
     public $isActive; // has the player disconnected?
     public $status;
     public $score;
+    public $icon;
 
     /** @var rbwebdesigns\fill_in_the_blanks\Card[] white cards in hand */
     public $cards;

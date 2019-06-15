@@ -48,7 +48,7 @@ class Game implements MessageComponentInterface
     /**
      * Connection opened callback
      * 
-     * @param ConnectionInterface $conn
+     * @param Ratchet\ConnectionInterface $conn
      */
     public function onOpen(ConnectionInterface $conn)
     {
@@ -59,7 +59,7 @@ class Game implements MessageComponentInterface
     /**
      * Message recieved callback
      * 
-     * @param ConnectionInterface $from
+     * @param Ratchet\ConnectionInterface $from
      * @param string $msg
      */
     public function onMessage(ConnectionInterface $from, $msg)
@@ -71,14 +71,6 @@ class Game implements MessageComponentInterface
 
         switch ($data['action']) {
             case 'player_connected':
-                // Return a message to the player with the game state so
-                // they are updated
-                $this->messenger->sendMessage($from, [
-                    'type' => 'connected_game_status',
-                    'game_status' => $this->status,
-                    'judge' => $this->playerManager->getJudge()
-                ]);
-
                 $this->addPlayer($from, $data);
                 break;
 
@@ -126,6 +118,9 @@ class Game implements MessageComponentInterface
         }
     }
 
+    /**
+     * @param Ratchet\ConnectionInterface $conn
+     */
     public function onClose(ConnectionInterface $conn)
     {
         // The connection is closed, remove it, as we can no longer send it messages
@@ -167,6 +162,10 @@ class Game implements MessageComponentInterface
         }
     }
 
+    /**
+     * @param Ratchet\ConnectionInterface $conn
+     * @param Exception $e
+     */
     public function onError(ConnectionInterface $conn, \Exception $e)
     {
         echo "An error has occurred: {$e->getMessage()}\n";
@@ -201,6 +200,14 @@ class Game implements MessageComponentInterface
                     return;
             }
         }
+
+        // Return a message to the player with the game state so
+        // they are updated
+        $this->messenger->sendMessage($from, [
+            'type' => 'connected_game_status',
+            'game_status' => $this->status,
+            'judge' => $this->playerManager->getJudge()
+        ]);
 
         // If they're reconnecting and have cards then send them the data
         if (count($player->cards) > 0) {
