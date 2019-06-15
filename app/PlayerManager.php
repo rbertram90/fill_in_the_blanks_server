@@ -40,6 +40,7 @@ class PlayerManager
             }
             $player->setConnection($conn);
             $player->isActive = true;
+            $player->status = $this->game::STATUS_CONNECTED;
             return $player;
         }
 

@@ -15,6 +15,7 @@ class Game implements MessageComponentInterface
     public $questionCardManager = null;
     public $answerCardManager = null;
     public static $minPlayers = 2;
+    public $roundTime = 0; // maximum round time in seconds (0 = infinite)
 
     // Player statuses
     public const STATUS_JUDGE = 'Card czar';
@@ -78,7 +79,7 @@ class Game implements MessageComponentInterface
                 // Check game state
                 if ($this->status !== self::GAME_STATUS_AWAITING_START) break;
 
-                $this->start();
+                $this->start($data);
                 break;
 
             case 'next_round':
@@ -93,6 +94,18 @@ class Game implements MessageComponentInterface
                 if ($this->status !== self::GAME_STATUS_PLAYERS_CHOOSING) break;
 
                 $this->answerSubmitted($from, $data);
+                break;
+
+            case 'round_expired':
+                // Timer has run out - trigger judging
+                if ($this->status !== self::GAME_STATUS_PLAYERS_CHOOSING) break;
+
+                if (count($this->cardsInPlay) > 0) {
+                    $this->startJudging();
+                }
+                else {
+                    $this->nextRound();
+                }
                 break;
 
             case 'winner_picked':
@@ -245,6 +258,7 @@ class Game implements MessageComponentInterface
                 'type' => 'round_start',
                 'questionCard' => $this->questionCardManager->currentQuestion,
                 'currentJudge' => $this->playerManager->getJudge(),
+                'roundTime' => $this->roundTime,
                 'players' => $this->playerManager->getActivePlayers(),
                 'playerInPlay' => $player->status == self::STATUS_IN_PLAY,
             ]);
@@ -264,7 +278,7 @@ class Game implements MessageComponentInterface
     /**
      * Try and start the game - will fail if not enough players are connected
      */
-    protected function start()
+    protected function start($options)
     {
         // Check we've got enough players
         if ($this->clients->count() < self::$minPlayers) {
@@ -285,11 +299,14 @@ class Game implements MessageComponentInterface
         // Update game status
         $this->status = self::GAME_STATUS_PLAYERS_CHOOSING;
 
+        $this->roundTime = $options['maxRoundTime'];
+
         $this->distributeAnswerCards();
         $this->messenger->sendToAll([
             'type' => 'round_start',
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
             'currentJudge' => $judge,
+            'roundTime' => $this->roundTime,
             'players' => $activePlayers,
         ]);
         $this->cardsInPlay = [];
@@ -322,6 +339,7 @@ class Game implements MessageComponentInterface
         $this->messenger->sendToAll([
             'type' => 'round_start',
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
+            'roundTime' => $this->roundTime,
             'currentJudge' => $this->playerManager->nextJudge(),
             'players' => $this->playerManager->getActivePlayers(),
         ]);
