@@ -192,4 +192,18 @@ class PlayerManager
             $player->cardsInPlay = [];
         }
     }
+
+    /**
+     * Check if a player has acheieve enough points to win the game
+     * 
+     * @return boolean
+     */
+    public function playerHasWon() {
+        foreach ($this->players as $player) {
+            if ($player->score >= $this->game->winningScore) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

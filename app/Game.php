@@ -14,8 +14,9 @@ class Game implements MessageComponentInterface
 
     public $questionCardManager = null;
     public $answerCardManager = null;
-    public static $minPlayers = 2;
+    public static $minPlayers = 3;
     public $roundTime = 0; // maximum round time in seconds (0 = infinite)
+    public $winningScore = 5;
 
     // Player statuses
     public const STATUS_JUDGE = 'Card czar';
@@ -29,6 +30,7 @@ class Game implements MessageComponentInterface
     public const GAME_STATUS_PLAYERS_CHOOSING = 1;
     public const GAME_STATUS_JUDGE_CHOOSING = 2;
     public const GAME_STATUS_ROUND_WON = 3;
+    public const GAME_STATUS_GAME_WON = 4;
 
     // Exception codes
     public const E_DUPLICATE_USERNAME = 1;
@@ -300,6 +302,7 @@ class Game implements MessageComponentInterface
         $this->status = self::GAME_STATUS_PLAYERS_CHOOSING;
 
         $this->roundTime = $options['maxRoundTime'];
+        $this->winningScore = $options['winningScore'];
 
         $this->distributeAnswerCards();
         $this->messenger->sendToAll([
@@ -333,6 +336,16 @@ class Game implements MessageComponentInterface
      */
     protected function nextRound()
     {
+        // Check if a player has won
+        if ($this->playerManager->playerHasWon()) {
+            $this->status = self::GAME_STATUS_GAME_WON;
+            $this->messenger->sendToAll([
+                'type' => 'game_won',
+                'players' => $this->playerManager->getActivePlayers(),
+            ]);
+            return;
+        }
+
         $this->status = self::GAME_STATUS_PLAYERS_CHOOSING;
         $this->distributeAnswerCards();
         $this->playerManager->clearCardsInPlay();
