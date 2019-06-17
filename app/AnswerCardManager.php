@@ -16,7 +16,7 @@ class AnswerCardManager
     public function __construct()
     {
         // Convert answers into cards
-        $whiteCards = file_get_contents(CARDS_ROOT.'/standard/white.txt');
+        $whiteCards = file_get_contents(CARDS_PATH.'/standard/white.txt');
         self::$answers = explode(PHP_EOL, $whiteCards);
         
         $this->resetDeck();

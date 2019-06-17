@@ -65,7 +65,7 @@ class QuestionCardManager
     protected function populateCards()
     {
         // Convert answers into cards
-        $blackCards = file_get_contents(CARDS_ROOT.'/standard/black.txt');
+        $blackCards = file_get_contents(CARDS_PATH.'/standard/black.txt');
         self::$questions = explode(PHP_EOL, $blackCards);
     }
 

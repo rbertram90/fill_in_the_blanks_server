@@ -10,6 +10,8 @@ use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
 use rbwebdesigns\fill_in_the_blanks\Game;
 
+$version = '2019-06-17';
+
 require __DIR__ . '/vendor/autoload.php';
 
 if (PHP_SAPI !== 'cli') {
@@ -22,17 +24,31 @@ if (!file_exists(__DIR__ . '/config.json')) {
     exit;
 }
 
-$config = json_decode(file_get_contents(__DIR__ . '/config.json'));
-$port = $config->port;
-define('CARDS_ROOT', $config->cards_path);
+print "***********************************\n\n";
+print "   Welcome to Fill in the Blanks   \n\n";
+print "   Version {$version}              \n\n";
+print "***********************************\n\n";
+
+$config = json_decode(file_get_contents(__DIR__ . '/config.json'), true);
+
+print "Loaded configuration:\n\n";
+
+foreach ($config as $key => $value) {
+    define(strtoupper($key), $value);
+    print strtoupper($key) .' = '. $value .PHP_EOL;
+}
+
+print PHP_EOL;
 
 $server = IoServer::factory(
-        new HttpServer(
-            new WsServer(
-                new Game()
-            )
-        ),
-        $port
-    );
+    new HttpServer(
+        new WsServer(
+            new Game()
+        )
+    ),
+    $config['port']
+);
+
+print "Game server ready, awaiting new connections...\n\n";
 
 $server->run();
