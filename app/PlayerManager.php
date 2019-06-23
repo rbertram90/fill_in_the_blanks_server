@@ -206,4 +206,14 @@ class PlayerManager
         }
         return false;
     }
+
+    /**
+     * Update the status of all players
+     */
+    public function changeAllPlayersStatus($status) {
+        foreach ($this->players as $player) {
+            $player->status = $status;
+        }
+    }
+
 }

@@ -4,19 +4,57 @@ namespace rbwebdesigns\fill_in_the_blanks;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 
+/**
+ * class Game
+ * 
+ * This class is passed as a parameter into the WsServer when the server
+ * is started. It's job is to take the incoming messages and maintain game
+ * state.
+ * 
+ * Currently nothing is persisted in files or a database, once the server
+ * has been stopped all data is lost.
+ */
 class Game implements MessageComponentInterface
 {
+    /**
+     * @var \SplObjectStorage collection of currently connected
+     *   clients (\Ratchet\ConnectionInterface)
+     */
     protected $clients;
+
+    /** @var \rbwebdesigns\fill_in_the_blanks\PlayerManager */
     protected $playerManager;
+
+    /** @var \rbwebdesigns\fill_in_the_blanks\Card[] */
     protected $cardsInPlay;
+
+    /** @var string */
     protected $status;
+
+    /** @var \rbwebdesigns\fill_in_the_blanks\Messenger */
     protected $messenger;
 
+
+    /** @var \rbwebdesigns\fill_in_the_blanks\QuestionCardManager */
     public $questionCardManager = null;
+
+    /** @var \rbwebdesigns\fill_in_the_blanks\AnswerCardManager */
     public $answerCardManager = null;
+
+    /** @var int  Minimum number of players required to play this game */
     public static $minPlayers = 3;
-    public $roundTime = 0; // maximum round time in seconds (0 = infinite)
+
+    /** @var int  Maximum time for playeres to choose their cards in seconds (0 = infinite) */
+    public $roundTime = 0;
+
+    /** @var int  How many points does a player require to win the game */
     public $winningScore = 5;
+
+    /** @var int  How many rounds have been successfully finished */
+    // public $roundNumber = 0;
+
+    /** @var int  How many cards should players have at the start of the round */
+    // public $cardCount = 8;
 
     // Player statuses
     public const STATUS_JUDGE = 'Card czar';
@@ -64,6 +102,7 @@ class Game implements MessageComponentInterface
      * 
      * @param Ratchet\ConnectionInterface $from
      * @param string $msg
+     *   json string containing data from client
      */
     public function onMessage(ConnectionInterface $from, $msg)
     {
@@ -134,6 +173,8 @@ class Game implements MessageComponentInterface
     }
 
     /**
+     * Connection closed / player has disconnected
+     * 
      * @param Ratchet\ConnectionInterface $conn
      */
     public function onClose(ConnectionInterface $conn)
@@ -178,6 +219,8 @@ class Game implements MessageComponentInterface
     }
 
     /**
+     * An error has occured with a connected client
+     * 
      * @param Ratchet\ConnectionInterface $conn
      * @param Exception $e
      */
@@ -188,6 +231,8 @@ class Game implements MessageComponentInterface
     }
 
     /**
+     * Get all the data on the connected clients
+     * 
      * @return SplObjectStorage
      */
     public function getConnectedClients()
@@ -196,7 +241,22 @@ class Game implements MessageComponentInterface
     }
 
     /**
-     * Add a player into game from connection details and username
+     * Add a player into game, this is triggered by a message from
+     * the client after they have connected into the server. I.e.
+     * not in the same process as when they are first connected,
+     * this is because we are unable to pass the username in the
+     * initial connect call.
+     * 
+     * Note the player connecting may already be known by username
+     * as they may have had an internet outage so this function
+     * looks to see if a username match exists and is not in use
+     * by a current player.
+     * 
+     * The game allows a player to join midway through a round and
+     * still be able to submit cards.
+     * 
+     * @todo More thought has needs to be given to what should
+     * happen when the host disconnects.
      * 
      * @param ConnectionInterface $from
      * @param array $data
@@ -216,15 +276,14 @@ class Game implements MessageComponentInterface
             }
         }
 
-        // Return a message to the player with the game state so
-        // they are updated
+        // Send a message to the player with the game state
         $this->messenger->sendMessage($from, [
             'type' => 'connected_game_status',
             'game_status' => $this->status,
             'judge' => $this->playerManager->getJudge()
         ]);
 
-        // If they're reconnecting and have cards then send them the data
+        // If they're reconnecting, and have cards, then send them the data
         if (count($player->cards) > 0) {
             $this->messenger->sendMessage($player->getConnection(), [
                 'type' => 'answer_card_update',
@@ -234,6 +293,24 @@ class Game implements MessageComponentInterface
 
         if ($this->status == self::GAME_STATUS_JUDGE_CHOOSING) {
             // Don't want to let them join in this round - wait until next
+            // Ensure the username is not sent to players
+            $safeCardData = [];
+            foreach ($this->cardsInPlay as $card) {
+                $playerId = $card['player']->getConnection()->resourceId;
+                if (!array_key_exists($playerId, $safeCardData)) $safeCardData[$playerId] = [];
+                $safeCardData[$playerId][] = $card['card'];
+            }
+
+            // Now remove player Ids keys!
+            $safeCardData = array_values($safeCardData);
+
+            $this->messenger->sendMessage($player->getConnection(), [
+                'type' => 'round_judge',
+                'currentQuestion' => $this->questionCardManager->currentQuestion,
+                'currentJudge' => $this->playerManager->getJudge(),
+                'allCards' => $safeCardData
+            ]);
+            
             $player->status = self::STATUS_CONNECTED;
         }
         elseif ($this->status == self::GAME_STATUS_PLAYERS_CHOOSING) {
@@ -266,8 +343,6 @@ class Game implements MessageComponentInterface
             ]);
         }
 
-        // @todo Send them current question?
-
         // Notify all players
         $this->messenger->sendToAll([
             'type' => 'player_connected',
@@ -279,6 +354,9 @@ class Game implements MessageComponentInterface
 
     /**
      * Try and start the game - will fail if not enough players are connected
+     * 
+     * @todo We haven't actually verified that the player that sent this
+     * message was the game host!
      */
     protected function start($options)
     {
@@ -292,8 +370,7 @@ class Game implements MessageComponentInterface
         }
 
         // Update player status
-        $activePlayers = $this->playerManager->getActivePlayers();
-        foreach ($activePlayers as $player) $player->status = self::STATUS_IN_PLAY;
+        $this->playerManager->changeAllPlayersStatus(self::STATUS_IN_PLAY);
 
         $judge = $this->playerManager->getJudge();
         $judge->status = self::STATUS_JUDGE;
@@ -304,13 +381,15 @@ class Game implements MessageComponentInterface
         $this->roundTime = $options['maxRoundTime'];
         $this->winningScore = $options['winningScore'];
 
+        // Ensure all players have the correct number of cards
         $this->distributeAnswerCards();
+
         $this->messenger->sendToAll([
             'type' => 'round_start',
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
             'currentJudge' => $judge,
             'roundTime' => $this->roundTime,
-            'players' => $activePlayers,
+            'players' => $this->playerManager->getActivePlayers(),
         ]);
         $this->cardsInPlay = [];
     }
@@ -336,7 +415,7 @@ class Game implements MessageComponentInterface
      */
     protected function nextRound()
     {
-        // Check if a player has won
+        // Check if a player has won the whole game
         if ($this->playerManager->playerHasWon()) {
             $this->status = self::GAME_STATUS_GAME_WON;
             $this->messenger->sendToAll([
@@ -445,6 +524,7 @@ class Game implements MessageComponentInterface
         // Send message to all players revealing the cards
         $this->messenger->sendToAll([
             'type' => 'round_judge',
+            'currentQuestion' => $this->questionCardManager->currentQuestion,
             'currentJudge' => $this->playerManager->getJudge(),
             'allCards' => $safeCardData
         ]);
