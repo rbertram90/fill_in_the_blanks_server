@@ -50,6 +50,12 @@ class Game implements MessageComponentInterface
     /** @var int  How many points does a player require to win the game */
     public $winningScore = 5;
 
+    /** @var boolean  Can the player enter their own text */
+    public $allowCustomText = true;
+
+    /** @var boolean  Can the player use images */
+    public $allowImages = false;
+
     /** @var int  How many rounds have been successfully finished */
     // public $roundNumber = 0;
 
@@ -380,6 +386,8 @@ class Game implements MessageComponentInterface
 
         $this->roundTime = $options['maxRoundTime'];
         $this->winningScore = $options['winningScore'];
+        $this->allowCustomText = $options['allowCustomText'];
+        $this->allowImages = $options['allowImages'];
 
         // Ensure all players have the correct number of cards
         $this->distributeAnswerCards();
@@ -390,6 +398,8 @@ class Game implements MessageComponentInterface
             'currentJudge' => $judge,
             'roundTime' => $this->roundTime,
             'players' => $this->playerManager->getActivePlayers(),
+            'allowCustomText' => $this->allowCustomText,
+            'allowImages' => $this->allowImages
         ]);
         $this->cardsInPlay = [];
     }
@@ -434,6 +444,8 @@ class Game implements MessageComponentInterface
             'roundTime' => $this->roundTime,
             'currentJudge' => $this->playerManager->nextJudge(),
             'players' => $this->playerManager->getActivePlayers(),
+            'allowCustomText' => $this->allowCustomText,
+            'allowImages' => $this->allowImages
         ]);
         $this->cardsInPlay = [];
     }
