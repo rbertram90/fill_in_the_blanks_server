@@ -346,6 +346,8 @@ class Game implements MessageComponentInterface
                 'roundTime' => $this->roundTime,
                 'players' => $this->playerManager->getActivePlayers(),
                 'playerInPlay' => $player->status == self::STATUS_IN_PLAY,
+                'allowCustomText' => $this->allowCustomText,
+                'allowImages' => $this->allowImages
             ]);
         }
 

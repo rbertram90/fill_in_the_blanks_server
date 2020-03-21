@@ -15,7 +15,7 @@ use rbwebdesigns\fill_in_the_blanks\Game;
  * @author R Bertram <ricky@rbwebdesigns.co.uk>
  */
 
-$version = '2019-06-17';
+$version = '2020-03-21';
 
 require __DIR__ . '/vendor/autoload.php';
 
