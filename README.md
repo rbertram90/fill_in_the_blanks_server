@@ -21,6 +21,7 @@ The lastest version of the client is available for anyone to use at http://filli
  - Copy config_default.json to config.json and set correct server variables
    - port - port number to use
    - cards_path - absolute path to directory where the decks of cards are saved on the server
+   - host_user - user name for the game host - anyone who enters the game with this name will be the host, if left blank defaults to the first person that enters the lobby.
 
 ### Starting the game server
  - Open a terminal

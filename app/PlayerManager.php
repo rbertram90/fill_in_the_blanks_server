@@ -12,6 +12,9 @@ class PlayerManager
     /** @var rbwebdesigns\fill_in_the_blanks\Game */
     protected $game;
 
+    /**
+     * PlayerManager constructor
+     */
     public function __construct($game)
     {
         $this->players = [];
@@ -48,7 +51,14 @@ class PlayerManager
         $player->username = $data['username'];
         $player->icon = $data['icon'];
         $player->ip = $conn->remoteAddress;
-        if (count($this->players) == 0) $player->isGameHost = true;
+        if (defined('HOST_USER') && strlen(HOST_USER) > 0) {
+            if (HOST_USER === $data['username']) {
+                $player->isGameHost = true;
+            }
+        }
+        elseif (count($this->players) == 0) {
+            $player->isGameHost = true;
+        }
 
         $this->players[] = $player;
         return $player;
@@ -175,7 +185,8 @@ class PlayerManager
     /**
      * Reset player data
      */
-    public function resetPlayers() {
+    public function resetPlayers()
+    {
         $activePlayers = $this->getActivePlayers();
 
         foreach ($activePlayers as $player) {
@@ -187,7 +198,8 @@ class PlayerManager
     /**
      * Make sure all players have empty hand at round start
      */
-    public function clearCardsInPlay() {
+    public function clearCardsInPlay()
+    {
         foreach ($this->players as $player) {
             $player->cardsInPlay = [];
         }
@@ -198,7 +210,8 @@ class PlayerManager
      * 
      * @return boolean
      */
-    public function playerHasWon() {
+    public function playerHasWon()
+    {
         foreach ($this->players as $player) {
             if ($player->score >= $this->game->winningScore) {
                 return true;
@@ -210,7 +223,8 @@ class PlayerManager
     /**
      * Update the status of all players
      */
-    public function changeAllPlayersStatus($status) {
+    public function changeAllPlayersStatus($status)
+    {
         foreach ($this->players as $player) {
             $player->status = $status;
         }

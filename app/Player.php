@@ -61,7 +61,8 @@ class Player
      * 
      * @param int[] $cards
      */
-    public function removeCards($cards) {
+    public function removeCards($cards)
+    {
         foreach ($cards as $card) {
             $c = 0;
             foreach ($this->cards as $playerCard) {
@@ -79,7 +80,8 @@ class Player
      * 
      * @param rbwebdesigns\fill_in_the_blanks\Card[] $cards
      */
-    public function playCards($cards) {
+    public function playCards($cards)
+    {
         $this->status = Game::STATUS_CARDS_CHOSEN;
         $this->cardsInPlay = $cards;
         $this->removeCards($cards);
@@ -88,7 +90,8 @@ class Player
     /**
      * Reset player data for new game
      */
-    public function reset() {
+    public function reset()
+    {
         $this->cards = [];
         $this->score = 0;
         $this->cardsInPlay = [];
@@ -97,7 +100,8 @@ class Player
     /**
      * Set the player as inactive
      */
-    public function setInactive() {
+    public function setInactive()
+    {
         $this->status = Game::STATUS_DISCONNECTED;
         $this->isActive = false;
 
@@ -115,4 +119,5 @@ class Player
         }
         $this->cardsInPlay = [];
     }
+
 }
