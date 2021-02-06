@@ -1,4 +1,5 @@
 <?php
+
 namespace rbwebdesigns\fill_in_the_blanks;
 
 /**
@@ -6,10 +7,13 @@ namespace rbwebdesigns\fill_in_the_blanks;
  */
 class QuestionCardManager
 {
-
+    /** @var string[] */
     protected static $questions = [];
 
+    /** @var \rbwebdesigns\fill_in_the_blanks\Card[] */
     protected $availableCards;
+
+    /** @var \rbwebdesigns\fill_in_the_blanks\Card */
     public $currentQuestion;
 
     /**
@@ -25,7 +29,7 @@ class QuestionCardManager
     }
 
     /**
-     * @return rbwebdesigns\fill_in_the_blanks\Card
+     * @return \rbwebdesigns\fill_in_the_blanks\Card
      */
     public function getRandomQuestion()
     {
@@ -47,7 +51,7 @@ class QuestionCardManager
      * @param int $questionIndex
      *   Index of the question text
      * 
-     * @return rbwebdesigns\fill_in_the_blanks\Card
+     * @return \rbwebdesigns\fill_in_the_blanks\Card
      */
     protected function createCard($questionIndex)
     {

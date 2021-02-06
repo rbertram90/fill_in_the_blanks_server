@@ -3,7 +3,6 @@ namespace rbwebdesigns\fill_in_the_blanks;
 
 class Player
 {
-
     public $username;
     public $ip;
     public $isGameHost = false;
@@ -12,20 +11,23 @@ class Player
     public $score;
     public $icon;
 
-    /** @var rbwebdesigns\fill_in_the_blanks\Card[] white cards in hand */
+    /** @var \rbwebdesigns\fill_in_the_blanks\Card[] white cards in hand */
     public $cards;
 
-    /** @var rbwebdesigns\fill_in_the_blanks\Card[] white cards that have been submitted for this round */
+    /** @var \rbwebdesigns\fill_in_the_blanks\Card[] white cards that have been submitted for this round */
     public $cardsInPlay;
 
-    /** @var rbwebdesigns\fill_in_the_blanks\Game */
+    /** @var \rbwebdesigns\fill_in_the_blanks\Game */
     protected $game;
 
-    /** @var ConnectionInterface */
+    /** @var \Ratchet\ConnectionInterface */
     protected $connection;
 
     /**
-     * class Player constructor
+     * Player constructor
+     * 
+     * @param \Ratchet\ConnectionInterfac $connection
+     * @param \rbwebdesigns\fill_in_the_blanks\Game $game
      */
     public function __construct($connection, $game)
     {
@@ -39,7 +41,7 @@ class Player
     /**
      * Get the connection object
      * 
-     * @return ConnectionInterface
+     * @return \Ratchet\ConnectionInterface
      */
     public function getConnection()
     {
@@ -49,7 +51,7 @@ class Player
     /**
      * Change the connection object
      * 
-     * @param ConnectionInterface $connection
+     * @param \Ratchet\ConnectionInterface $connection
      */
     public function setConnection($connection)
     {
@@ -78,7 +80,7 @@ class Player
     /**
      * Player has submitted white cards - update
      * 
-     * @param rbwebdesigns\fill_in_the_blanks\Card[] $cards
+     * @param \rbwebdesigns\fill_in_the_blanks\Card[] $cards
      */
     public function playCards($cards)
     {

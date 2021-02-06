@@ -3,9 +3,11 @@ namespace rbwebdesigns\fill_in_the_blanks;
 
 class Messenger
 {
-
     protected $game;
 
+    /**
+     * Messenger constructor
+     */
     public function __construct($game) {
         $this->game = $game;
     }

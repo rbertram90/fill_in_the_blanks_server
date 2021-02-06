@@ -6,8 +6,10 @@ namespace rbwebdesigns\fill_in_the_blanks;
  */
 class AnswerCardManager
 {
+    /** @var string[] */
     protected static $answers = [];
 
+    /** @var \rbwebdesigns\fill_in_the_blanks\Card[]  */
     protected $availableCards = [];
 
     /**
@@ -80,7 +82,8 @@ class AnswerCardManager
     /**
      * Return all cards to available
      */
-    public function resetDeck() {
+    public function resetDeck()
+    {
         $this->availableCards = [];
         $answerIndex = 0;
         foreach (self::$answers as $answerText) {
@@ -88,4 +91,5 @@ class AnswerCardManager
             $answerIndex++;
         }
     }
+
 }

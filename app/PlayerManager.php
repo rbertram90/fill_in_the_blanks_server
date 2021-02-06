@@ -3,17 +3,19 @@ namespace rbwebdesigns\fill_in_the_blanks;
 
 class PlayerManager
 {
-    /** @var rbwebdesigns\fill_in_the_blanks\Player[] */
+    /** @var \rbwebdesigns\fill_in_the_blanks\Player[] */
     protected $players;
 
-    /** @var rbwebdesigns\fill_in_the_blanks\Player */
+    /** @var \rbwebdesigns\fill_in_the_blanks\Player */
     protected $currentPlayer;
 
-    /** @var rbwebdesigns\fill_in_the_blanks\Game */
+    /** @var \rbwebdesigns\fill_in_the_blanks\Game */
     protected $game;
 
     /**
      * PlayerManager constructor
+     * 
+     * @param \rbwebdesigns\fill_in_the_blanks\Game $game
      */
     public function __construct($game)
     {
@@ -53,10 +55,12 @@ class PlayerManager
         $player->ip = $conn->remoteAddress;
         if (defined('HOST_USER') && strlen(HOST_USER) > 0) {
             if (HOST_USER === $data['username']) {
+                print "MADE PLAYER HOST - ".HOST_USER."\n";
                 $player->isGameHost = true;
             }
         }
         elseif (count($this->players) == 0) {
+            print "MADE PLAYER HOST - FIRST PLAYER - {$data['username']}\n";
             $player->isGameHost = true;
         }
 

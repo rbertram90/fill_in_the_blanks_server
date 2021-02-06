@@ -286,7 +286,8 @@ class Game implements MessageComponentInterface
         $this->messenger->sendMessage($from, [
             'type' => 'connected_game_status',
             'game_status' => $this->status,
-            'judge' => $this->playerManager->getJudge()
+            'judge' => $this->playerManager->getJudge(),
+            'player_is_host' => $player->isGameHost
         ]);
 
         // If they're reconnecting, and have cards, then send them the data
