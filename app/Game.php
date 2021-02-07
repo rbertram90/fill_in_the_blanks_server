@@ -283,11 +283,14 @@ class Game implements MessageComponentInterface
         }
 
         // Send a message to the player with the game state
+        // game_status lets the front-end which screen to show
+        // variables past here will be available to game config screen
         $this->messenger->sendMessage($from, [
             'type' => 'connected_game_status',
             'game_status' => $this->status,
             'judge' => $this->playerManager->getJudge(),
-            'player_is_host' => $player->isGameHost
+            'player_is_host' => $player->isGameHost,
+            // 'card_packs' => $this->cardPacks,
         ]);
 
         // If they're reconnecting, and have cards, then send them the data
@@ -373,7 +376,8 @@ class Game implements MessageComponentInterface
         if ($this->clients->count() < self::$minPlayers) {
             $this->messenger->sendToHost([
                 'type' => 'start_game_fail',
-                'message' => 'Not enough players (minimum ' . self::$minPlayers . ')'
+                'errorType' => 'more_players_needed',
+                'minPlayers' => self::$minPlayers
             ]);
             return;
         }
