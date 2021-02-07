@@ -13,19 +13,20 @@ class QuestionCardManager
     /** @var \rbwebdesigns\fill_in_the_blanks\Card[] */
     protected $availableCards;
 
+    /** @var \rbwebdesigns\fill_in_the_blanks\Game */
+    protected $game;
+
     /** @var \rbwebdesigns\fill_in_the_blanks\Card */
     public $currentQuestion;
 
     /**
      * QuestionCardManager constructor
+     * 
+     * @param \rbwebdesigns\fill_in_the_blanks\Game $game
      */
-    public function __construct()
+    public function __construct($game)
     {
-        // Convert answers into cards
-        $this->populateCards();
-
-        // Convert question text into cards
-        $this->resetDeck();
+        $this->game = $game;
     }
 
     /**
@@ -62,15 +63,22 @@ class QuestionCardManager
     }
 
     /**
-     * Get the cards from text files
-     * 
-     * @todo add UI to choose packs!
+     * Get the question cards from text files
      */
-    protected function populateCards()
+    public function buildDeck()
     {
-        // Convert answers into cards
-        $blackCards = file_get_contents(CARDS_PATH . '/standard/black.txt');
-        self::$questions = explode(PHP_EOL, $blackCards);
+        // Get card data from file(s)
+        $questions = [];
+        foreach ($this->game->activeCardPacks as $pack) {
+            print "Adding question card pack - " . $pack . PHP_EOL;
+            $cards = file_get_contents(CARDS_PATH .'/'. $pack .'/black.txt');
+            $questions += array_merge($questions, explode(PHP_EOL, $cards));
+        }
+        
+        self::$questions = $questions;
+
+        // Convert question text into cards
+        $this->resetDeck();
     }
 
     /**

@@ -12,15 +12,34 @@ class AnswerCardManager
     /** @var \rbwebdesigns\fill_in_the_blanks\Card[]  */
     protected $availableCards = [];
 
+    /** @var \rbwebdesigns\fill_in_the_blanks\Game */
+    protected $game;
+
     /**
      * AnswerCardManager constructor
+     * 
+     * @param \rbwebdesigns\fill_in_the_blanks\Game $game
      */
-    public function __construct()
+    public function __construct($game)
     {
-        // Convert answers into cards
-        $whiteCards = file_get_contents(CARDS_PATH.'/standard/white.txt');
-        self::$answers = explode(PHP_EOL, $whiteCards);
+        $this->game = $game;        
+    }
+
+    /**
+     * Get the question cards from text files
+     */
+    public function buildDeck()
+    {
+        // Get card data from file(s)
+        $answers = [];
+        foreach ($this->game->activeCardPacks as $pack) {
+            print "Adding answer card pack - " . $pack . PHP_EOL;
+            $cards = file_get_contents(CARDS_PATH .'/'. $pack .'/white.txt');
+            $answers = array_merge($answers, explode(PHP_EOL, $cards));
+        }
         
+        self::$answers = $answers;
+
         $this->resetDeck();
     }
 

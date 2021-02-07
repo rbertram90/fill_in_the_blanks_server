@@ -50,6 +50,12 @@ class Game implements MessageComponentInterface
     /** @var int  How many points does a player require to win the game */
     public $winningScore = 5;
 
+    /** @var string[]  Directory name of available card packs */
+    public $cardPacks = [];
+
+    /** @var string[]  Directory name of selected card packs */
+    public $activeCardPacks = [];
+
     /** @var boolean  Can the player enter their own text */
     public $allowCustomText = true;
 
@@ -86,10 +92,19 @@ class Game implements MessageComponentInterface
     {
         $this->clients = new \SplObjectStorage;
         $this->playerManager = new PlayerManager($this);
-        $this->questionCardManager = new QuestionCardManager;
-        $this->answerCardManager = new AnswerCardManager;
+        $this->questionCardManager = new QuestionCardManager($this);
+        $this->answerCardManager = new AnswerCardManager($this);
         $this->messenger = new Messenger($this);
         $this->status = self::GAME_STATUS_AWAITING_START;
+
+        // Get a list of card packs in the card packs folder
+        foreach (scandir(CARDS_PATH) as $file) {
+            if ($file == '.' || $file == '..') continue;
+            elseif (file_exists(CARDS_PATH .'/'. $file .'/black.txt') && file_exists(CARDS_PATH .'/'. $file .'/white.txt')) {
+                // This is a valid card pack
+                $this->cardPacks[] = $file;
+            }
+        }
     }
 
     /**
@@ -290,7 +305,7 @@ class Game implements MessageComponentInterface
             'game_status' => $this->status,
             'judge' => $this->playerManager->getJudge(),
             'player_is_host' => $player->isGameHost,
-            // 'card_packs' => $this->cardPacks,
+            'card_packs' => $this->cardPacks,
         ]);
 
         // If they're reconnecting, and have cards, then send them the data
@@ -395,6 +410,11 @@ class Game implements MessageComponentInterface
         $this->winningScore = $options['winningScore'];
         $this->allowCustomText = $options['allowCustomText'];
         $this->allowImages = $options['allowImages'];
+        $this->activeCardPacks = $options['cardPacks'];
+
+        // Now we know which decks to use, populate black and white card decks
+        $this->answerCardManager->buildDeck();
+        $this->questionCardManager->buildDeck();
 
         // Ensure all players have the correct number of cards
         $this->distributeAnswerCards();
