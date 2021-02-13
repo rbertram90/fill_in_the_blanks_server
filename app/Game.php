@@ -434,7 +434,8 @@ class Game implements MessageComponentInterface
             $this->messenger->sendMessage($player->getConnection(), [
                 'type' => 'round_start',
                 'questionCard' => $this->questionCardManager->currentQuestion,
-                'currentJudge' => $this->playerManager->getJudge(),
+                'currentJudge' => $this->judgingMode === self::GAME_JM_STANDARD ? $this->playerManager->getJudge() : null,
+                'currentReader' => $this->judgingMode === self::GAME_JM_COMMITTEE ? $this->playerManager->getJudge() : null,
                 'roundTime' => $this->roundTime,
                 'players' => $this->playerManager->getActivePlayers(),
                 'playerInPlay' => $player->status == self::STATUS_IN_PLAY,
@@ -483,10 +484,10 @@ class Game implements MessageComponentInterface
         $this->activeCardPacks = $options['cardPacks'];
         $this->judgingMode = intval($options['judgingMode']);
 
-        // Select judge if needed
-        $judge = null;
+        // Select judge/reader
+        $judge = $this->playerManager->getJudge();
+
         if ($this->judgingMode === self::GAME_JM_STANDARD) {
-            $judge = $this->playerManager->getJudge();
             $judge->status = self::STATUS_JUDGE;
         }
 
@@ -500,7 +501,8 @@ class Game implements MessageComponentInterface
         $this->messenger->sendToAll([
             'type' => 'round_start',
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
-            'currentJudge' => $judge,
+            'currentJudge' => $this->judgingMode === self::GAME_JM_STANDARD ? $judge : null,
+            'currentReader' => $this->judgingMode === self::GAME_JM_COMMITTEE ? $judge : null,
             'roundTime' => $this->roundTime,
             'players' => $this->playerManager->getActivePlayers(),
             'allowCustomText' => $this->allowCustomText,
@@ -557,6 +559,7 @@ class Game implements MessageComponentInterface
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
             'roundTime' => $this->roundTime,
             'currentJudge' => $this->judgingMode === self::GAME_JM_STANDARD ? $this->playerManager->nextJudge() : null,
+            'currentReader' => $this->judgingMode === self::GAME_JM_COMMITTEE ? $this->playerManager->nextJudge() : null,
             'players' => $this->playerManager->getActivePlayers(),
             'allowCustomText' => $this->allowCustomText,
             'allowImages' => $this->allowImages
@@ -679,7 +682,6 @@ class Game implements MessageComponentInterface
                 continue;
             }
             if (count($player->cardsInPlay) == 0) {
-                print 'player ' . $player->username . ' has cards in play' . PHP_EOL;
                 return false;
             }
         }
