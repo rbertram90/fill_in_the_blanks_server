@@ -44,6 +44,9 @@ class Game implements MessageComponentInterface
 
     /** @var \rbwebdesigns\fill_in_the_blanks\AnswerCardManager */
     public $answerCardManager = null;
+    
+    /** @var \rbwebdesigns\fill_in_the_blanks\Player */
+    public $host = null;
 
     /** @var int  Minimum number of players required to play this game */
     public static $minPlayers = 3;
@@ -162,7 +165,12 @@ class Game implements MessageComponentInterface
 
             case 'next_round':
                 // Check game state
-                if ($this->status !== self::GAME_STATUS_ROUND_WON) break;
+                if ($this->status == self::GAME_STATUS_JUDGE_CHOOSING && $data['forced']) {
+                    // Continue
+                }
+                elseif ($this->status !== self::GAME_STATUS_ROUND_WON) {
+                    break;
+                }
 
                 $this->nextRound();
                 break;
@@ -225,26 +233,7 @@ class Game implements MessageComponentInterface
 
                         // Check if everyone has now recorded a vote
                         if ($this->allPlayersJudged()) {
-                            // Decide on a winner
-                            $winners = array_keys($this->committeeVotes, max($this->committeeVotes));
-
-                            if (count($winners) > 1) {
-                                // todo: We've got a tie!
-                                // Let the person who was due to be Czar pick between those who have tied but who are not?
-                                // Whoever picked first wins?
-                                // Random pick?
-                            }
-
-                            $roundWinner = $this->cardsInPlay[$winners[0]]['player'];
-                            $roundWinner->score += 1;
-                            $this->status = self::GAME_STATUS_ROUND_WON;
-
-                            $this->messenger->sendToAll([
-                                'type' => 'round_winner',
-                                'winner' => $roundWinner,
-                                'players' => $this->playerManager->getActivePlayers(),
-                                'card' => $winners[0]
-                            ]);
+                            $this->committeeFinishedVoting();
                         }
                         else {
                             // Broadcast that this player has submitted their vote
@@ -256,6 +245,22 @@ class Game implements MessageComponentInterface
                         }
                         break;
                 }
+                break;
+
+            case 'force_decision':
+                // In committee mode if a player is away, force the game to continue to results
+                if ($this->status !== self::GAME_STATUS_JUDGE_CHOOSING) {
+                    print "Incorrect game status to do this action \n";
+                    break;
+                }
+                $player = $this->playerManager->getPlayerByResourceId($from->resourceId);
+                if ($player->username !== $this->host->username) {
+                    print "Player not permitted to do this action ({$player->username} {$this->host->username}) \n";
+                    break;
+                }
+
+                // Jump straight into the vote finalising stage
+                $this->committeeFinishedVoting();
                 break;
 
             case 'reset_game':
@@ -701,6 +706,32 @@ class Game implements MessageComponentInterface
             }
         }
         return true;
+    }
+
+    /**
+     * Action to take when everyone has finished voting
+     */
+    protected function committeeFinishedVoting() {
+        // Decide on a winner
+        $winners = array_keys($this->committeeVotes, max($this->committeeVotes));
+
+        if (count($winners) > 1) {
+            // todo: We've got a tie!
+            // Let the person who was due to be Czar pick between those who have tied but who are not?
+            // Whoever picked first wins?
+            // Random pick?
+        }
+
+        $roundWinner = $this->cardsInPlay[$winners[0]]['player'];
+        $roundWinner->score += 1;
+        $this->status = self::GAME_STATUS_ROUND_WON;
+
+        $this->messenger->sendToAll([
+            'type' => 'round_winner',
+            'winner' => $roundWinner,
+            'players' => $this->playerManager->getActivePlayers(),
+            'card' => $winners[0]
+        ]);
     }
 
 }
