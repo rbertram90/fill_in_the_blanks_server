@@ -25,7 +25,11 @@ class Game implements MessageComponentInterface
     /** @var \rbwebdesigns\fill_in_the_blanks\PlayerManager */
     protected $playerManager;
 
-    /** @var \rbwebdesigns\fill_in_the_blanks\Card[] */
+    /**
+     * @var mixed[]
+     * card => \rbwebdesigns\fill_in_the_blanks\Card
+     * player => \rbwebdesigns\fill_in_the_blanks\Player
+     */
     protected $cardsInPlay;
 
     /** @var string */
@@ -40,6 +44,9 @@ class Game implements MessageComponentInterface
 
     /** @var \rbwebdesigns\fill_in_the_blanks\AnswerCardManager */
     public $answerCardManager = null;
+    
+    /** @var \rbwebdesigns\fill_in_the_blanks\Player */
+    public $host = null;
 
     /** @var int  Minimum number of players required to play this game */
     public static $minPlayers = 3;
@@ -62,6 +69,12 @@ class Game implements MessageComponentInterface
     /** @var boolean  Can the player use images */
     public $allowImages = false;
 
+    /** @var string  Judging mode */
+    public $judgingMode = self::GAME_JM_STANDARD;
+
+    /** @var int[]  Judging results in committee mode */
+    protected $committeeVotes = [];
+
     /** @var int  How many rounds have been successfully finished */
     // public $roundNumber = 0;
 
@@ -72,6 +85,8 @@ class Game implements MessageComponentInterface
     public const STATUS_JUDGE = 'Card czar';
     public const STATUS_IN_PLAY = 'Choosing card(s)';
     public const STATUS_CARDS_CHOSEN = 'Card(s) submitted';
+    public const STATUS_CHOOSING_WINNER = 'Picking a winner';
+    public const STATUS_CHOSEN_WINNER = 'Waiting';
     public const STATUS_CONNECTED = 'Connected';
     public const STATUS_DISCONNECTED = 'Disconnected';
 
@@ -84,6 +99,10 @@ class Game implements MessageComponentInterface
 
     // Exception codes
     public const E_DUPLICATE_USERNAME = 1;
+
+    // Judging modes
+    public const GAME_JM_STANDARD = 0;
+    public const GAME_JM_COMMITTEE = 1;
     
     /**
      * Game constructor
@@ -110,7 +129,7 @@ class Game implements MessageComponentInterface
     /**
      * Connection opened callback
      * 
-     * @param Ratchet\ConnectionInterface $conn
+     * @param \Ratchet\ConnectionInterface $conn
      */
     public function onOpen(ConnectionInterface $conn)
     {
@@ -121,7 +140,7 @@ class Game implements MessageComponentInterface
     /**
      * Message recieved callback
      * 
-     * @param Ratchet\ConnectionInterface $from
+     * @param \Ratchet\ConnectionInterface $from
      * @param string $msg
      *   json string containing data from client
      */
@@ -146,7 +165,12 @@ class Game implements MessageComponentInterface
 
             case 'next_round':
                 // Check game state
-                if ($this->status !== self::GAME_STATUS_ROUND_WON) break;
+                if ($this->status == self::GAME_STATUS_JUDGE_CHOOSING && $data['forced']) {
+                    // Continue
+                }
+                elseif ($this->status !== self::GAME_STATUS_ROUND_WON) {
+                    break;
+                }
 
                 $this->nextRound();
                 break;
@@ -175,16 +199,68 @@ class Game implements MessageComponentInterface
                 if ($this->status !== self::GAME_STATUS_JUDGE_CHOOSING) break;
 
                 $winningCard = $data['card'];
-                $winner = $this->cardsInPlay[$winningCard]['player'];
-                $winner->score += 1;
-                $this->status = self::GAME_STATUS_ROUND_WON;
-                
-                $this->messenger->sendToAll([
-                    'type' => 'round_winner',
-                    'winner' => $winner,
-                    'players' => $this->playerManager->getActivePlayers(),
-                    'card' => $winningCard
-                ]);
+
+                switch ($this->judgingMode) {
+                    case self::GAME_JM_STANDARD:
+                        // Single judge
+                        $winner = $this->cardsInPlay[$winningCard]['player'];
+                        $winner->score += 1;
+                        $this->status = self::GAME_STATUS_ROUND_WON;
+
+                        $this->messenger->sendToAll([
+                            'type' => 'round_winner',
+                            'winner' => $winner,
+                            'players' => $this->playerManager->getActivePlayers(),
+                            'card' => $winningCard
+                        ]);
+                        break;
+
+                    case self::GAME_JM_COMMITTEE:
+                        // Everyone gets a say
+
+                        // Add score to somewhere
+                        if (!array_key_exists($winningCard, $this->committeeVotes)) {
+                            $this->committeeVotes[$winningCard] = 1;
+                        }
+                        else {
+                            $this->committeeVotes[$winningCard]++;
+                        }
+
+                        // Record that this user has cast a vote
+                        $player = $this->playerManager->getPlayerByResourceId($from->resourceId);
+                        $player->hasVoted = true;
+                        $player->status = self::STATUS_CHOSEN_WINNER;
+
+                        // Check if everyone has now recorded a vote
+                        if ($this->allPlayersJudged()) {
+                            $this->committeeFinishedVoting();
+                        }
+                        else {
+                            // Broadcast that this player has submitted their vote
+                            $this->messenger->sendToAll([
+                                'type' => 'player_judged',
+                                'players' => $this->playerManager->getActivePlayers(),
+                                'player' => $this->playerManager->getPlayerByResourceId($from->resourceId),
+                            ]);
+                        }
+                        break;
+                }
+                break;
+
+            case 'force_decision':
+                // In committee mode if a player is away, force the game to continue to results
+                if ($this->status !== self::GAME_STATUS_JUDGE_CHOOSING) {
+                    print "Incorrect game status to do this action \n";
+                    break;
+                }
+                $player = $this->playerManager->getPlayerByResourceId($from->resourceId);
+                if ($player->username !== $this->host->username) {
+                    print "Player not permitted to do this action ({$player->username} {$this->host->username}) \n";
+                    break;
+                }
+
+                // Jump straight into the vote finalising stage
+                $this->committeeFinishedVoting();
                 break;
 
             case 'reset_game':
@@ -332,8 +408,10 @@ class Game implements MessageComponentInterface
             $this->messenger->sendMessage($player->getConnection(), [
                 'type' => 'round_judge',
                 'currentQuestion' => $this->questionCardManager->currentQuestion,
-                'currentJudge' => $this->playerManager->getJudge(),
-                'allCards' => $safeCardData
+                'judgeMode' => $this->judgingMode,
+                'currentJudge' => $this->judgingMode === self::GAME_JM_STANDARD ? $this->playerManager->getJudge() : null,
+                'allCards' => $safeCardData,
+                'players' => $this->playerManager->getActivePlayers()
             ]);
             
             $player->status = self::STATUS_CONNECTED;
@@ -361,7 +439,8 @@ class Game implements MessageComponentInterface
             $this->messenger->sendMessage($player->getConnection(), [
                 'type' => 'round_start',
                 'questionCard' => $this->questionCardManager->currentQuestion,
-                'currentJudge' => $this->playerManager->getJudge(),
+                'currentJudge' => $this->judgingMode === self::GAME_JM_STANDARD ? $this->playerManager->getJudge() : null,
+                'currentReader' => $this->judgingMode === self::GAME_JM_COMMITTEE ? $this->playerManager->getJudge() : null,
                 'roundTime' => $this->roundTime,
                 'players' => $this->playerManager->getActivePlayers(),
                 'playerInPlay' => $player->status == self::STATUS_IN_PLAY,
@@ -400,9 +479,6 @@ class Game implements MessageComponentInterface
         // Update player status
         $this->playerManager->changeAllPlayersStatus(self::STATUS_IN_PLAY);
 
-        $judge = $this->playerManager->getJudge();
-        $judge->status = self::STATUS_JUDGE;
-
         // Update game status
         $this->status = self::GAME_STATUS_PLAYERS_CHOOSING;
 
@@ -411,6 +487,14 @@ class Game implements MessageComponentInterface
         $this->allowCustomText = $options['allowCustomText'];
         $this->allowImages = $options['allowImages'];
         $this->activeCardPacks = $options['cardPacks'];
+        $this->judgingMode = intval($options['judgingMode']);
+
+        // Select judge/reader
+        $judge = $this->playerManager->getJudge();
+
+        if ($this->judgingMode === self::GAME_JM_STANDARD) {
+            $judge->status = self::STATUS_JUDGE;
+        }
 
         // Now we know which decks to use, populate black and white card decks
         $this->answerCardManager->buildDeck();
@@ -422,11 +506,13 @@ class Game implements MessageComponentInterface
         $this->messenger->sendToAll([
             'type' => 'round_start',
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
-            'currentJudge' => $judge,
+            'currentJudge' => $this->judgingMode === self::GAME_JM_STANDARD ? $judge : null,
+            'currentReader' => $this->judgingMode === self::GAME_JM_COMMITTEE ? $judge : null,
             'roundTime' => $this->roundTime,
             'players' => $this->playerManager->getActivePlayers(),
             'allowCustomText' => $this->allowCustomText,
-            'allowImages' => $this->allowImages
+            'allowImages' => $this->allowImages,
+            'judgingMode' => $this->judgingMode,
         ]);
         $this->cardsInPlay = [];
     }
@@ -462,6 +548,14 @@ class Game implements MessageComponentInterface
             return;
         }
 
+        if ($this->judgingMode === self::GAME_JM_COMMITTEE) {
+            foreach ($this->playerManager->getActivePlayers() as $player) {
+                $player->hasVoted = false;
+                $player->status = self::STATUS_IN_PLAY;
+            }
+        }
+
+        $this->committeeVotes = [];
         $this->status = self::GAME_STATUS_PLAYERS_CHOOSING;
         $this->distributeAnswerCards();
         $this->playerManager->clearCardsInPlay();
@@ -469,7 +563,8 @@ class Game implements MessageComponentInterface
             'type' => 'round_start',
             'questionCard' => $this->questionCardManager->getRandomQuestion(),
             'roundTime' => $this->roundTime,
-            'currentJudge' => $this->playerManager->nextJudge(),
+            'currentJudge' => $this->judgingMode === self::GAME_JM_STANDARD ? $this->playerManager->nextJudge() : null,
+            'currentReader' => $this->judgingMode === self::GAME_JM_COMMITTEE ? $this->playerManager->nextJudge() : null,
             'players' => $this->playerManager->getActivePlayers(),
             'allowCustomText' => $this->allowCustomText,
             'allowImages' => $this->allowImages
@@ -560,12 +655,20 @@ class Game implements MessageComponentInterface
         // Now remove player Ids keys!
         $safeCardData = array_values($safeCardData);
 
+        if ($this->judgingMode == self::GAME_JM_COMMITTEE) {
+            foreach ($this->playerManager->getActivePlayers() as $player) {
+                $player->status = self::STATUS_CHOOSING_WINNER;
+            }
+        }
+
         // Send message to all players revealing the cards
         $this->messenger->sendToAll([
             'type' => 'round_judge',
             'currentQuestion' => $this->questionCardManager->currentQuestion,
-            'currentJudge' => $this->playerManager->getJudge(),
-            'allCards' => $safeCardData
+            'judgeMode' => $this->judgingMode,
+            'currentJudge' => $this->judgingMode === self::GAME_JM_STANDARD ? $this->playerManager->getJudge() : null,
+            'allCards' => $safeCardData,
+            'players' => $this->playerManager->getActivePlayers()
         ]);
     }
 
@@ -579,12 +682,56 @@ class Game implements MessageComponentInterface
         $judge = $this->playerManager->getJudge();
 
         foreach ($this->playerManager->getActivePlayers() as $player) {
-            if ($player->username == $judge->username) continue;
+            // Do not look for a submission from the judge
+            if ($this->judgingMode === self::GAME_JM_STANDARD && $player->username === $judge->username) {
+                continue;
+            }
             if (count($player->cardsInPlay) == 0) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Checks if all players have chosen their winner for this round
+     * 
+     * @return bool true if all players have chosen
+     */
+    protected function allPlayersJudged()
+    {
+        foreach ($this->playerManager->getActivePlayers() as $player) {
+            if ($player->hasVoted == false) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Action to take when everyone has finished voting
+     */
+    protected function committeeFinishedVoting() {
+        // Decide on a winner
+        $winners = array_keys($this->committeeVotes, max($this->committeeVotes));
+
+        if (count($winners) > 1) {
+            // todo: We've got a tie!
+            // Let the person who was due to be Czar pick between those who have tied but who are not?
+            // Whoever picked first wins?
+            // Random pick?
+        }
+
+        $roundWinner = $this->cardsInPlay[$winners[0]]['player'];
+        $roundWinner->score += 1;
+        $this->status = self::GAME_STATUS_ROUND_WON;
+
+        $this->messenger->sendToAll([
+            'type' => 'round_winner',
+            'winner' => $roundWinner,
+            'players' => $this->playerManager->getActivePlayers(),
+            'card' => $winners[0]
+        ]);
     }
 
 }

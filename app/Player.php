@@ -10,6 +10,7 @@ class Player
     public $status;
     public $score;
     public $icon;
+    public $hasVoted;
 
     /** @var \rbwebdesigns\fill_in_the_blanks\Card[] white cards in hand */
     public $cards;
@@ -26,7 +27,7 @@ class Player
     /**
      * Player constructor
      * 
-     * @param \Ratchet\ConnectionInterfac $connection
+     * @param \Ratchet\ConnectionInterface $connection
      * @param \rbwebdesigns\fill_in_the_blanks\Game $game
      */
     public function __construct($connection, $game)
@@ -35,6 +36,7 @@ class Player
         $this->isActive = true;
         $this->status = Game::STATUS_CONNECTED;
         $this->game = $game;
+        $this->hasVoted = false;
         $this->reset();
     }
 
@@ -97,6 +99,7 @@ class Player
         $this->cards = [];
         $this->score = 0;
         $this->cardsInPlay = [];
+        $this->hasVoted = false;
     }
 
     /**

@@ -64,6 +64,9 @@ class PlayerManager
             $player->isGameHost = true;
         }
 
+        if ($player->isGameHost) {
+            $this->game->host = $player;
+        }
         $this->players[] = $player;
         return $player;
     }
@@ -71,7 +74,7 @@ class PlayerManager
     /**
      * Get a connected player by their username
      * 
-     * @return rbwebdesigns\fill_in_the_blanks\Player|null
+     * @return \rbwebdesigns\fill_in_the_blanks\Player|null
      */
     public function getPlayerByUsername($username)
     {
@@ -86,7 +89,7 @@ class PlayerManager
     /**
      * Get a connected player by their resource (socket) Id
      * 
-     * @return rbwebdesigns\fill_in_the_blanks\Player|null
+     * @return \rbwebdesigns\fill_in_the_blanks\Player|null
      */
     public function getPlayerByResourceId($resourceId)
     {
@@ -101,7 +104,7 @@ class PlayerManager
     /**
      * Get all players in the game (active and not)
      * 
-     * @return rbwebdesigns\fill_in_the_blanks\Player[]
+     * @return \rbwebdesigns\fill_in_the_blanks\Player[]
      */
     public function getAllPlayers()
     {
